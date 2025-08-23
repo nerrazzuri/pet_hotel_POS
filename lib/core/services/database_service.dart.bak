@@ -1,0 +1,1070 @@
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+
+class DatabaseService {
+	static Database? _database;
+	static const String _databaseName = 'cat_hotel_pos.db';
+	static const int _databaseVersion = 6;
+	
+	// Table names
+	static const String _usersTable = 'users';
+	static const String _customersTable = 'customers';
+	static const String _petsTable = 'pets';
+	static const String _roomsTable = 'rooms';
+	static const String _bookingsTable = 'bookings';
+	static const String _servicesTable = 'services';
+	static const String _productsTable = 'products';
+	static const String _transactionsTable = 'transactions';
+	static const String _inventoryTable = 'inventory';
+	static const String _auditLogsTable = 'audit_logs';
+	static const String _posCartsTable = 'pos_carts';
+	static const String _posTransactionsTable = 'pos_transactions';
+	static const String _suppliersTable = 'suppliers';
+	static const String _purchaseOrdersTable = 'purchase_orders';
+	static const String _purchaseOrderItemsTable = 'purchase_order_items';
+	static const String _inventoryTransactionsTable = 'inventory_transactions';
+	
+	static Future<void> initialize() async {
+		if (_database != null) return;
+		
+		// Skip database initialization on web platform
+		if (kIsWeb) {
+			print('Database initialization skipped on web platform');
+			return;
+		}
+		
+		// Initialize sqflite for Windows
+		if (Platform.isWindows) {
+			sqfliteFfiInit();
+			databaseFactory = databaseFactoryFfi;
+		}
+		
+		final databasePath = await getDatabasesPath();
+		final path = join(databasePath, _databaseName);
+		
+		_database = await openDatabase(
+			path,
+			version: _databaseVersion,
+			onCreate: _onCreate,
+			onUpgrade: _onUpgrade,
+		);
+		
+		// Create indexes for better performance
+		await _createIndexes();
+	}
+	
+	static Future<void> _onCreate(Database db, int version) async {
+		// Users table
+		await db.execute('''
+			CREATE TABLE $_usersTable (
+				id TEXT PRIMARY KEY,
+				username TEXT UNIQUE NOT NULL,
+				email TEXT UNIQUE NOT NULL,
+				fullName TEXT NOT NULL,
+				role TEXT NOT NULL,
+				permissions TEXT NOT NULL,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				lastLogin TEXT,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				passwordHash TEXT,
+				salt TEXT,
+				phoneNumber TEXT,
+				department TEXT,
+				position TEXT,
+				location TEXT,
+				hireDate TEXT,
+				lastPasswordChange TEXT,
+				failedLoginAttempts INTEGER DEFAULT 0,
+				lockoutUntil TEXT,
+				notes TEXT
+			)
+		''');
+		
+		// Customers table
+		await db.execute('''
+			CREATE TABLE $_customersTable (
+				id TEXT PRIMARY KEY,
+				customerCode TEXT UNIQUE NOT NULL,
+				firstName TEXT NOT NULL,
+				lastName TEXT NOT NULL,
+				email TEXT,
+				phone TEXT NOT NULL,
+				address TEXT,
+				emergencyContact TEXT,
+				emergencyPhone TEXT,
+				loyaltyPoints INTEGER DEFAULT 0,
+				loyaltyTier TEXT DEFAULT 'Bronze',
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL
+			)
+		''');
+		
+		// Pets table
+		await db.execute('''
+			CREATE TABLE $_petsTable (
+				id TEXT PRIMARY KEY,
+				customerId TEXT NOT NULL,
+				name TEXT NOT NULL,
+				species TEXT NOT NULL DEFAULT 'Cat',
+				breed TEXT,
+				color TEXT,
+				weight REAL,
+				birthDate TEXT,
+				gender TEXT,
+				temperament TEXT,
+				medicalNotes TEXT,
+				feedingSchedule TEXT,
+				allergies TEXT,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				FOREIGN KEY (customerId) REFERENCES $_customersTable (id)
+			)
+		''');
+		
+		// Rooms table - Updated schema
+		await db.execute('''
+			CREATE TABLE $_roomsTable (
+				id TEXT PRIMARY KEY,
+				roomNumber TEXT UNIQUE NOT NULL,
+				name TEXT NOT NULL,
+				type TEXT NOT NULL,
+				status TEXT NOT NULL DEFAULT 'available',
+				capacity INTEGER NOT NULL DEFAULT 1,
+				basePricePerNight REAL NOT NULL,
+				peakSeasonPrice REAL NOT NULL,
+				description TEXT NOT NULL,
+				amenities TEXT NOT NULL,
+				specifications TEXT NOT NULL,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				currentOccupantId TEXT,
+				currentOccupantName TEXT,
+				lastCleanedAt TEXT,
+				nextCleaningDue TEXT,
+				notes TEXT,
+				maintenanceNotes TEXT,
+				currentPrice REAL,
+				images TEXT,
+				metadata TEXT
+			)
+		''');
+		
+		// Bookings table - Updated schema
+		await db.execute('''
+			CREATE TABLE $_bookingsTable (
+				id TEXT PRIMARY KEY,
+				bookingNumber TEXT UNIQUE NOT NULL,
+				customerId TEXT NOT NULL,
+				customerName TEXT NOT NULL,
+				petId TEXT NOT NULL,
+				petName TEXT NOT NULL,
+				roomId TEXT NOT NULL,
+				roomNumber TEXT NOT NULL,
+				checkInDate TEXT NOT NULL,
+				checkOutDate TEXT NOT NULL,
+				checkInTime TEXT NOT NULL,
+				checkOutTime TEXT NOT NULL,
+				status TEXT NOT NULL DEFAULT 'pending',
+				type TEXT NOT NULL DEFAULT 'standard',
+				basePricePerNight REAL NOT NULL,
+				totalAmount REAL NOT NULL,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				depositAmount REAL,
+				discountAmount REAL,
+				taxAmount REAL,
+				specialInstructions TEXT,
+				careNotes TEXT,
+				veterinaryNotes TEXT,
+				additionalServices TEXT,
+				servicePrices TEXT,
+				assignedStaffId TEXT,
+				assignedStaffName TEXT,
+				actualCheckInTime TEXT,
+				actualCheckOutTime TEXT,
+				cancellationReason TEXT,
+				cancelledAt TEXT,
+				cancelledBy TEXT,
+				refundAmount REAL,
+				paymentMethod TEXT,
+				paymentStatus TEXT,
+				invoiceNumber TEXT,
+				receiptNumber TEXT,
+				metadata TEXT,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				FOREIGN KEY (customerId) REFERENCES $_customersTable (id),
+				FOREIGN KEY (petId) REFERENCES $_petsTable (id),
+				FOREIGN KEY (roomId) REFERENCES $_roomsTable (id)
+			)
+		''');
+		
+		// Services table
+		await db.execute('''
+			CREATE TABLE $_servicesTable (
+				id TEXT PRIMARY KEY,
+				serviceCode TEXT UNIQUE NOT NULL,
+				name TEXT NOT NULL,
+				category TEXT NOT NULL,
+				description TEXT,
+				price REAL NOT NULL,
+				duration INTEGER,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL
+			)
+		''');
+		
+		// Products table
+		await db.execute('''
+			CREATE TABLE $_productsTable (
+				id TEXT PRIMARY KEY,
+				productCode TEXT UNIQUE NOT NULL,
+				barcode TEXT,
+				name TEXT NOT NULL,
+				category TEXT NOT NULL,
+				description TEXT,
+				price REAL NOT NULL,
+				cost REAL NOT NULL,
+				stockQuantity INTEGER NOT NULL DEFAULT 0,
+				reorderPoint INTEGER DEFAULT 0,
+				supplier TEXT,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				imageUrl TEXT,
+				brand TEXT,
+				size TEXT,
+				color TEXT,
+				weight REAL,
+				unit TEXT,
+				tags TEXT,
+				specifications TEXT
+			)
+		''');
+		
+		// Transactions table
+		await db.execute('''
+			CREATE TABLE $_transactionsTable (
+				id TEXT PRIMARY KEY,
+				transactionNumber TEXT UNIQUE NOT NULL,
+				customerId TEXT,
+				bookingId TEXT,
+				type TEXT NOT NULL,
+				status TEXT NOT NULL DEFAULT 'Pending',
+				subtotal REAL NOT NULL,
+				taxAmount REAL NOT NULL DEFAULT 0,
+				discountAmount REAL NOT NULL DEFAULT 0,
+				totalAmount REAL NOT NULL,
+				paymentMethod TEXT,
+				paymentStatus TEXT NOT NULL DEFAULT 'Pending',
+				notes TEXT,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				FOREIGN KEY (customerId) REFERENCES $_customersTable (id),
+				FOREIGN KEY (bookingId) REFERENCES $_bookingsTable (id)
+			)
+		''');
+		
+		// Inventory table
+		await db.execute('''
+			CREATE TABLE $_inventoryTable (
+				id TEXT PRIMARY KEY,
+				productId TEXT NOT NULL,
+				batchNumber TEXT,
+				expiryDate TEXT,
+				quantity INTEGER NOT NULL,
+				unitCost REAL NOT NULL,
+				supplier TEXT,
+				purchaseDate TEXT,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				FOREIGN KEY (productId) REFERENCES $_productsTable (id)
+			)
+		''');
+		
+		// Audit logs table
+		await db.execute('''
+			CREATE TABLE $_auditLogsTable (
+				id TEXT PRIMARY KEY,
+				userId TEXT NOT NULL,
+				userEmail TEXT NOT NULL,
+				userRole TEXT NOT NULL,
+				action TEXT NOT NULL,
+				resource TEXT NOT NULL,
+				details TEXT NOT NULL,
+				severity TEXT NOT NULL,
+				timestamp TEXT NOT NULL,
+				ipAddress TEXT,
+				userAgent TEXT,
+				metadata TEXT,
+				targetUserId TEXT,
+				targetUserRole TEXT,
+				FOREIGN KEY (userId) REFERENCES $_usersTable (id)
+			)
+		''');
+		
+		// POS Carts table
+		await db.execute('''
+			CREATE TABLE $_posCartsTable (
+				id TEXT PRIMARY KEY,
+				items TEXT NOT NULL,
+				created_at TEXT NOT NULL,
+				customer_id TEXT,
+				customer_name TEXT,
+				customer_phone TEXT,
+				notes TEXT,
+				hold_reason TEXT,
+				held_at TEXT,
+				held_by TEXT,
+				subtotal REAL DEFAULT 0.0,
+				tax_amount REAL DEFAULT 0.0,
+				discount_amount REAL DEFAULT 0.0,
+				total_amount REAL DEFAULT 0.0,
+				amount_paid REAL DEFAULT 0.0,
+				change_amount REAL DEFAULT 0.0,
+				payment_method TEXT,
+				status TEXT NOT NULL DEFAULT 'active',
+				cashier_id TEXT,
+				cashier_name TEXT,
+				transaction_id TEXT
+			)
+		''');
+		
+		// POS Transactions table
+		await db.execute('''
+			CREATE TABLE $_posTransactionsTable (
+				id TEXT PRIMARY KEY,
+				items TEXT NOT NULL,
+				created_at TEXT NOT NULL,
+				completed_at TEXT NOT NULL,
+				total_amount REAL NOT NULL,
+				payment_method TEXT NOT NULL,
+				status TEXT NOT NULL,
+				customer_id TEXT,
+				customer_name TEXT,
+				customer_phone TEXT,
+				customer_email TEXT,
+				subtotal REAL,
+				tax_amount REAL,
+				discount_amount REAL,
+				amount_paid REAL,
+				change_amount REAL,
+				cashier_id TEXT,
+				cashier_name TEXT,
+				receipt_number TEXT,
+				invoice_number TEXT,
+				notes TEXT,
+				refund_reason TEXT,
+				void_reason TEXT,
+				refunded_at TEXT,
+				voided_at TEXT,
+				refunded_by TEXT,
+				voided_by TEXT,
+				payment_splits TEXT,
+				metadata TEXT
+			)
+		''');
+		
+		// Suppliers table
+		await db.execute('''
+			CREATE TABLE $_suppliersTable (
+				id TEXT PRIMARY KEY,
+				name TEXT NOT NULL,
+				companyName TEXT,
+				contactPerson TEXT,
+				email TEXT,
+				phone TEXT,
+				address TEXT,
+				city TEXT,
+				state TEXT,
+				zipCode TEXT,
+				country TEXT,
+				website TEXT,
+				taxId TEXT,
+				paymentTerms TEXT,
+				creditLimit REAL,
+				notes TEXT,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				categories TEXT,
+				metadata TEXT
+			)
+		''');
+
+		// Purchase Orders table
+		await db.execute('''
+			CREATE TABLE $_purchaseOrdersTable (
+				id TEXT PRIMARY KEY,
+				orderNumber TEXT UNIQUE NOT NULL,
+				supplierId TEXT NOT NULL,
+				supplierName TEXT,
+				status TEXT NOT NULL,
+				type TEXT NOT NULL,
+				orderDate TEXT NOT NULL,
+				expectedDeliveryDate TEXT NOT NULL,
+				actualDeliveryDate TEXT,
+				subtotal REAL NOT NULL,
+				taxAmount REAL NOT NULL,
+				shippingAmount REAL NOT NULL,
+				totalAmount REAL NOT NULL,
+				notes TEXT,
+				specialInstructions TEXT,
+				approvedBy TEXT,
+				approvedAt TEXT,
+				orderedBy TEXT,
+				orderedAt TEXT,
+				receivedBy TEXT,
+				receivedAt TEXT,
+				cancellationReason TEXT,
+				cancelledBy TEXT,
+				cancelledAt TEXT,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				metadata TEXT,
+				FOREIGN KEY (supplierId) REFERENCES $_suppliersTable (id)
+			)
+		''');
+
+		// Purchase Order Items table
+		await db.execute('''
+			CREATE TABLE $_purchaseOrderItemsTable (
+				id TEXT PRIMARY KEY,
+				purchaseOrderId TEXT NOT NULL,
+				productId TEXT,
+				productName TEXT,
+				productCode TEXT,
+				barcode TEXT,
+				quantity INTEGER NOT NULL,
+				unitCost REAL NOT NULL,
+				totalCost REAL NOT NULL,
+				description TEXT,
+				notes TEXT,
+				specifications TEXT,
+				expectedDeliveryDate TEXT,
+				receivedQuantity INTEGER,
+				receivedDate TEXT,
+				receivedBy TEXT,
+				rejectionReason TEXT,
+				isRejected INTEGER DEFAULT 0,
+				isActive INTEGER NOT NULL DEFAULT 1,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				metadata TEXT,
+				FOREIGN KEY (purchaseOrderId) REFERENCES $_purchaseOrdersTable (id)
+			)
+		''');
+
+		// Inventory Transactions table
+		await db.execute('''
+			CREATE TABLE $_inventoryTransactionsTable (
+				id TEXT PRIMARY KEY,
+				productId TEXT NOT NULL,
+				productName TEXT,
+				productCode TEXT,
+				type TEXT NOT NULL,
+				quantity INTEGER NOT NULL,
+				unitCost REAL NOT NULL,
+				totalCost REAL NOT NULL,
+				reference TEXT,
+				referenceId TEXT,
+				notes TEXT,
+				location TEXT,
+				batchNumber TEXT,
+				expiryDate TEXT,
+				createdBy TEXT,
+				metadata TEXT,
+				createdAt TEXT NOT NULL,
+				updatedAt TEXT NOT NULL,
+				FOREIGN KEY (productId) REFERENCES $_productsTable (id)
+			)
+		''');
+	}
+	
+	static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+		// Handle database upgrades here
+		if (oldVersion < 2) {
+			// Add missing columns to users table (ignore errors if they already exist)
+			final List<String> userAlterStmts = [
+				"ALTER TABLE $_usersTable ADD COLUMN passwordHash TEXT",
+				"ALTER TABLE $_usersTable ADD COLUMN salt TEXT",
+				"ALTER TABLE $_usersTable ADD COLUMN phoneNumber TEXT",
+				"ALTER TABLE $_usersTable ADD COLUMN department TEXT",
+				"ALTER TABLE $_usersTable ADD COLUMN position TEXT",
+				"ALTER TABLE $_usersTable ADD COLUMN location TEXT",
+				"ALTER TABLE $_usersTable ADD COLUMN hireDate TEXT",
+				"ALTER TABLE $_usersTable ADD COLUMN lastPasswordChange TEXT",
+				"ALTER TABLE $_usersTable ADD COLUMN failedLoginAttempts INTEGER DEFAULT 0",
+				"ALTER TABLE $_usersTable ADD COLUMN lockoutUntil TEXT",
+				"ALTER TABLE $_usersTable ADD COLUMN notes TEXT",
+			];
+			for (final stmt in userAlterStmts) {
+				try { await db.execute(stmt); } catch (_) {}
+			}
+			// Recreate audit_logs table to the new schema
+			try { await db.execute('DROP TABLE IF EXISTS $_auditLogsTable'); } catch (_) {}
+			await db.execute('''
+				CREATE TABLE $_auditLogsTable (
+					id TEXT PRIMARY KEY,
+					userId TEXT NOT NULL,
+					userEmail TEXT NOT NULL,
+					userRole TEXT NOT NULL,
+					action TEXT NOT NULL,
+					resource TEXT NOT NULL,
+					details TEXT NOT NULL,
+					severity TEXT NOT NULL,
+					timestamp TEXT NOT NULL,
+					ipAddress TEXT,
+					userAgent TEXT,
+					metadata TEXT,
+					targetUserId TEXT,
+					targetUserRole TEXT,
+					FOREIGN KEY (userId) REFERENCES $_usersTable (id)
+				)
+			''');
+		}
+		
+		if (oldVersion < 3) {
+			// Update rooms table schema
+			try { await db.execute('DROP TABLE IF EXISTS $_roomsTable'); } catch (_) {}
+			await db.execute('''
+				CREATE TABLE $_roomsTable (
+					id TEXT PRIMARY KEY,
+					roomNumber TEXT UNIQUE NOT NULL,
+					name TEXT NOT NULL,
+					type TEXT NOT NULL,
+					status TEXT NOT NULL DEFAULT 'available',
+					capacity INTEGER NOT NULL DEFAULT 1,
+					basePricePerNight REAL NOT NULL,
+					peakSeasonPrice REAL NOT NULL,
+					description TEXT NOT NULL,
+					amenities TEXT NOT NULL,
+					specifications TEXT NOT NULL,
+					isActive INTEGER NOT NULL DEFAULT 1,
+					createdAt TEXT NOT NULL,
+					updatedAt TEXT NOT NULL,
+					currentOccupantId TEXT,
+					currentOccupantName TEXT,
+					lastCleanedAt TEXT,
+					nextCleaningDue TEXT,
+					notes TEXT,
+					maintenanceNotes TEXT,
+					currentPrice REAL,
+					images TEXT,
+					metadata TEXT
+				)
+			''');
+			
+			// Update bookings table schema
+			try { await db.execute('DROP TABLE IF EXISTS $_bookingsTable'); } catch (_) {}
+			await db.execute('''
+				CREATE TABLE $_bookingsTable (
+					id TEXT PRIMARY KEY,
+					bookingNumber TEXT UNIQUE NOT NULL,
+					customerId TEXT NOT NULL,
+					customerName TEXT NOT NULL,
+					petId TEXT NOT NULL,
+					petName TEXT NOT NULL,
+					roomId TEXT NOT NULL,
+					roomNumber TEXT NOT NULL,
+					checkInDate TEXT NOT NULL,
+					checkOutDate TEXT NOT NULL,
+					checkInTime TEXT NOT NULL,
+					checkOutTime TEXT NOT NULL,
+					status TEXT NOT NULL DEFAULT 'pending',
+					type TEXT NOT NULL DEFAULT 'standard',
+					basePricePerNight REAL NOT NULL,
+					totalAmount REAL NOT NULL,
+					createdAt TEXT NOT NULL,
+					updatedAt TEXT NOT NULL,
+					depositAmount REAL,
+					discountAmount REAL,
+					taxAmount REAL,
+					specialInstructions TEXT,
+					careNotes TEXT,
+					veterinaryNotes TEXT,
+					additionalServices TEXT,
+					servicePrices TEXT,
+					assignedStaffId TEXT,
+					assignedStaffName TEXT,
+					actualCheckInTime TEXT,
+					actualCheckOutTime TEXT,
+					cancellationReason TEXT,
+					cancelledAt TEXT,
+					cancelledBy TEXT,
+					refundAmount REAL,
+					paymentMethod TEXT,
+					paymentStatus TEXT,
+					invoiceNumber TEXT,
+					receiptNumber TEXT,
+					metadata TEXT,
+					isActive INTEGER NOT NULL DEFAULT 1,
+					FOREIGN KEY (customerId) REFERENCES $_customersTable (id),
+					FOREIGN KEY (petId) REFERENCES $_petsTable (id),
+					FOREIGN KEY (roomId) REFERENCES $_roomsTable (id)
+				)
+			''');
+		}
+		
+		if (oldVersion < 4) {
+			// Create suppliers table
+			await db.execute('''
+				CREATE TABLE $_suppliersTable (
+					id TEXT PRIMARY KEY,
+					name TEXT NOT NULL,
+					companyName TEXT,
+					contactPerson TEXT,
+					email TEXT,
+					phone TEXT,
+					address TEXT,
+					city TEXT,
+					state TEXT,
+					zipCode TEXT,
+					country TEXT,
+					website TEXT,
+					taxId TEXT,
+					paymentTerms TEXT,
+					creditLimit REAL,
+					notes TEXT,
+					isActive INTEGER NOT NULL DEFAULT 1,
+					createdAt TEXT NOT NULL,
+					updatedAt TEXT NOT NULL,
+					categories TEXT,
+					metadata TEXT
+				)
+			''');
+		}
+
+		if (oldVersion < 5) {
+			// Update products table with new fields
+			final List<String> productAlterStmts = [
+				"ALTER TABLE $_productsTable ADD COLUMN imageUrl TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN brand TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN size TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN color TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN weight REAL",
+				"ALTER TABLE $_productsTable ADD COLUMN unit TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN tags TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN specifications TEXT",
+			];
+			for (final stmt in productAlterStmts) {
+				try { await db.execute(stmt); } catch (_) {}
+			}
+
+			// Create purchase orders table
+			await db.execute('''
+				CREATE TABLE $_purchaseOrdersTable (
+					id TEXT PRIMARY KEY,
+					orderNumber TEXT UNIQUE NOT NULL,
+					supplierId TEXT NOT NULL,
+					supplierName TEXT,
+					status TEXT NOT NULL,
+					type TEXT NOT NULL,
+					orderDate TEXT NOT NULL,
+					expectedDeliveryDate TEXT NOT NULL,
+					actualDeliveryDate TEXT,
+					subtotal REAL NOT NULL,
+					taxAmount REAL NOT NULL,
+					shippingAmount REAL NOT NULL,
+					totalAmount REAL NOT NULL,
+					notes TEXT,
+					specialInstructions TEXT,
+					approvedBy TEXT,
+					approvedAt TEXT,
+					orderedBy TEXT,
+					orderedAt TEXT,
+					receivedBy TEXT,
+					receivedAt TEXT,
+					cancellationReason TEXT,
+					cancelledBy TEXT,
+					cancelledAt TEXT,
+					isActive INTEGER NOT NULL DEFAULT 1,
+					createdAt TEXT NOT NULL,
+					updatedAt TEXT NOT NULL,
+					metadata TEXT,
+					FOREIGN KEY (supplierId) REFERENCES $_suppliersTable (id)
+				)
+			''');
+
+			// Create purchase order items table
+			await db.execute('''
+				CREATE TABLE $_purchaseOrderItemsTable (
+					id TEXT PRIMARY KEY,
+					purchaseOrderId TEXT NOT NULL,
+					productId TEXT,
+					productCode TEXT,
+					barcode TEXT,
+					productName TEXT,
+					quantity INTEGER NOT NULL,
+					unitCost REAL NOT NULL,
+					totalCost REAL NOT NULL,
+					description TEXT,
+					notes TEXT,
+					specifications TEXT,
+					expectedDeliveryDate TEXT,
+					receivedQuantity INTEGER,
+					receivedDate TEXT,
+					receivedBy TEXT,
+					rejectionReason TEXT,
+					isRejected INTEGER DEFAULT 0,
+					isActive INTEGER NOT NULL DEFAULT 1,
+					createdAt TEXT NOT NULL,
+					updatedAt TEXT NOT NULL,
+					metadata TEXT,
+					FOREIGN KEY (purchaseOrderId) REFERENCES $_purchaseOrdersTable (id)
+				)
+			''');
+
+			// Create inventory transactions table
+			await db.execute('''
+				CREATE TABLE $_inventoryTransactionsTable (
+					id TEXT PRIMARY KEY,
+					productId TEXT NOT NULL,
+					productName TEXT,
+					productCode TEXT,
+					type TEXT NOT NULL,
+					quantity INTEGER NOT NULL,
+					unitCost REAL NOT NULL,
+					totalCost REAL NOT NULL,
+					reference TEXT,
+					referenceId TEXT,
+					notes TEXT,
+					location TEXT,
+					batchNumber TEXT,
+					expiryDate TEXT,
+					createdBy TEXT,
+					metadata TEXT,
+					createdAt TEXT NOT NULL,
+					updatedAt TEXT NOT NULL,
+					FOREIGN KEY (productId) REFERENCES $_productsTable (id)
+				)
+			''');
+		}
+
+		if (oldVersion < 6) {
+			// Update products table with new fields if they don't exist
+			final List<String> productAlterStmts = [
+				"ALTER TABLE $_productsTable ADD COLUMN imageUrl TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN brand TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN size TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN color TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN weight REAL",
+				"ALTER TABLE $_productsTable ADD COLUMN unit TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN tags TEXT",
+				"ALTER TABLE $_productsTable ADD COLUMN specifications TEXT",
+			];
+			for (final stmt in productAlterStmts) {
+				try { await db.execute(stmt); } catch (_) {}
+			}
+		}
+	}
+	
+	static Future<void> _createIndexes() async {
+		if (_database == null) return;
+		
+		// Create indexes for better query performance
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_customers_email ON $_customersTable (email)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_customers_phone ON $_customersTable (phone)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_pets_customer_id ON $_petsTable (customerId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_bookings_customer_id ON $_bookingsTable (customerId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_bookings_room_id ON $_bookingsTable (roomId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_bookings_dates ON $_bookingsTable (checkInDate, checkOutDate)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_bookings_status ON $_bookingsTable (status)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_bookings_booking_number ON $_bookingsTable (bookingNumber)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_rooms_room_number ON $_roomsTable (roomNumber)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_rooms_status ON $_roomsTable (status)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_rooms_type ON $_roomsTable (type)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_transactions_customer_id ON $_transactionsTable (customerId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_transactions_booking_id ON $_transactionsTable (bookingId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_products_barcode ON $_productsTable (barcode)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_inventory_product_id ON $_inventoryTable (productId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON $_auditLogsTable (userId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON $_auditLogsTable (timestamp)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_pos_carts_status ON $_posCartsTable (status)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_pos_carts_created_at ON $_posCartsTable (created_at)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_pos_transactions_status ON $_posTransactionsTable (status)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_pos_transactions_completed_at ON $_posTransactionsTable (completed_at)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_suppliers_name ON $_suppliersTable (name)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_suppliers_company_name ON $_suppliersTable (companyName)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_suppliers_is_active ON $_suppliersTable (isActive)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_order_number ON $_purchaseOrdersTable (orderNumber)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_supplier_id ON $_purchaseOrdersTable (supplierId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON $_purchaseOrdersTable (status)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_purchase_orders_order_date ON $_purchaseOrdersTable (orderDate)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_purchase_order_items_order_id ON $_purchaseOrderItemsTable (purchaseOrderId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_purchase_order_items_product_id ON $_purchaseOrderItemsTable (productId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_products_name ON $_productsTable (name)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_products_category ON $_productsTable (category)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_products_supplier ON $_productsTable (supplier)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_inventory_transactions_product_id ON $_inventoryTransactionsTable (productId)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_inventory_transactions_type ON $_inventoryTransactionsTable (type)');
+		await _database!.execute('CREATE INDEX IF NOT EXISTS idx_inventory_transactions_created_at ON $_inventoryTransactionsTable (createdAt)');
+	}
+	
+	static Database get database {
+		if (_database == null) {
+			throw Exception('Database not initialized. Call DatabaseService.initialize() first.');
+		}
+		return _database!;
+	}
+	
+	static Future<void> close() async {
+		if (_database != null) {
+			await _database!.close();
+			_database = null;
+		}
+	}
+	
+	static Future<void> clearAllData() async {
+		if (_database == null) return;
+		
+		await _database!.transaction((txn) async {
+			await txn.delete(_posTransactionsTable);
+			await txn.delete(_posCartsTable);
+			await txn.delete(_auditLogsTable);
+			await txn.delete(_bookingsTable);
+			await txn.delete(_inventoryTable);
+			await txn.delete(_transactionsTable);
+			await txn.delete(_roomsTable);
+			await txn.delete(_bookingsTable);
+			await txn.delete(_petsTable);
+			await txn.delete(_customersTable);
+			await txn.delete(_roomsTable);
+			await txn.delete(_servicesTable);
+			await txn.delete(_productsTable);
+			await txn.delete(_usersTable);
+		});
+	}
+	
+	static Future<void> backupDatabase(String backupPath) async {
+		if (_database == null) return;
+		
+		// Implementation for database backup
+		// This would typically involve copying the database file
+		// and potentially compressing it
+	}
+	
+	static Future<void> restoreDatabase(String backupPath) async {
+		if (_database == null) return;
+		
+		// Implementation for database restore
+		// This would involve closing the current database
+		// and replacing it with the backup
+	}
+
+	/// Seed the database with sample data for testing
+	static Future<void> seedSampleData() async {
+		if (_database == null) {
+			throw Exception('Database not initialized');
+		}
+
+		// Check if data already exists
+		final existingCustomers = await query(_customersTable);
+		if (existingCustomers.isNotEmpty) {
+			print('Sample data already exists, skipping seeding');
+			return;
+		}
+
+		print('Seeding database with sample data...');
+
+		// Insert sample customers
+		await insert(_customersTable, {
+			'id': 'sample_customer_1',
+			'customerCode': 'CUST001',
+			'firstName': 'John',
+			'lastName': 'Doe',
+			'email': 'john.doe@example.com',
+			'phone': '+1-555-0101',
+			'address': '123 Main St, Anytown, USA',
+			'emergencyContact': 'Jane Doe',
+			'emergencyPhone': '+1-555-0102',
+			'loyaltyPoints': 150,
+			'loyaltyTier': 'Silver',
+			'isActive': 1,
+			'createdAt': DateTime.now().toIso8601String(),
+			'updatedAt': DateTime.now().toIso8601String(),
+		});
+
+		await insert(_customersTable, {
+			'id': 'sample_customer_2',
+			'customerCode': 'CUST002',
+			'firstName': 'Alice',
+			'lastName': 'Smith',
+			'email': 'alice.smith@example.com',
+			'phone': '+1-555-0201',
+			'address': '456 Oak Ave, Somewhere, USA',
+			'emergencyContact': 'Bob Smith',
+			'emergencyPhone': '+1-555-0202',
+			'loyaltyPoints': 75,
+			'loyaltyTier': 'Bronze',
+			'isActive': 1,
+			'createdAt': DateTime.now().toIso8601String(),
+			'updatedAt': DateTime.now().toIso8601String(),
+		});
+
+		await insert(_customersTable, {
+			'id': 'sample_customer_3',
+			'customerCode': 'CUST003',
+			'firstName': 'Charlie',
+			'lastName': 'Brown',
+			'email': 'charlie.brown@example.com',
+			'phone': '+1-555-0301',
+			'address': '789 Pine St, Elsewhere, USA',
+			'emergencyContact': 'Lucy Brown',
+			'emergencyPhone': '+1-555-0302',
+			'loyaltyPoints': 300,
+			'loyaltyTier': 'Gold',
+			'isActive': 1,
+			'createdAt': DateTime.now().toIso8601String(),
+			'updatedAt': DateTime.now().toIso8601String(),
+		});
+
+		// Insert sample suppliers
+		await insert(_suppliersTable, {
+			'id': 'sample_supplier_1',
+			'name': 'Pet Food Distributors Inc',
+			'companyName': 'Pet Food Distributors Inc',
+			'contactPerson': 'Sarah Johnson',
+			'email': 'sarah@petfooddist.com',
+			'phone': '+1-555-1001',
+			'address': '123 Pet Supply Blvd',
+			'city': 'Pet City',
+			'state': 'CA',
+			'zipCode': '90210',
+			'country': 'USA',
+			'website': 'https://petfooddist.com',
+			'paymentTerms': 'Net 30',
+			'creditLimit': 10000.0,
+			'notes': 'Primary pet food supplier',
+			'isActive': 1,
+			'createdAt': DateTime.now().toIso8601String(),
+			'updatedAt': DateTime.now().toIso8601String(),
+			'categories': 'Pet Food,Treats',
+		});
+
+		await insert(_suppliersTable, {
+			'id': 'sample_supplier_2',
+			'name': 'Quality Pet Supplies',
+			'companyName': 'Quality Pet Supplies LLC',
+			'contactPerson': 'Mike Chen',
+			'email': 'mike@qualitypet.com',
+			'phone': '+1-555-2002',
+			'address': '456 Supply Lane',
+			'city': 'Supplier Town',
+			'state': 'TX',
+			'zipCode': '75001',
+			'country': 'USA',
+			'website': 'https://qualitypet.com',
+			'paymentTerms': 'Net 15',
+			'creditLimit': 5000.0,
+			'notes': 'Toys and accessories supplier',
+			'isActive': 1,
+			'createdAt': DateTime.now().toIso8601String(),
+			'updatedAt': DateTime.now().toIso8601String(),
+			'categories': 'Toys,Accessories,Grooming',
+		});
+
+		await insert(_suppliersTable, {
+			'id': 'sample_supplier_3',
+			'name': 'Veterinary Supplies Co',
+			'companyName': 'Veterinary Supplies Co',
+			'contactPerson': 'Dr. Emily Rodriguez',
+			'email': 'emily@vetsupp.com',
+			'phone': '+1-555-3003',
+			'address': '789 Medical Drive',
+			'city': 'Health Valley',
+			'state': 'FL',
+			'zipCode': '33101',
+			'country': 'USA',
+			'website': 'https://vetsupp.com',
+			'paymentTerms': 'Net 45',
+			'creditLimit': 15000.0,
+			'notes': 'Medical and health supplies',
+			'isActive': 1,
+			'createdAt': DateTime.now().toIso8601String(),
+			'updatedAt': DateTime.now().toIso8601String(),
+			'categories': 'Health,Medical,Cleaning',
+		});
+
+		print('Sample data seeded successfully');
+	}
+	
+	// Database operation methods
+	static Future<int> insert(String table, Map<String, dynamic> data) async {
+		if (_database == null) {
+			throw Exception('Database not initialized');
+		}
+		return await _database!.insert(table, data);
+	}
+	
+	static Future<int> update(
+		String table,
+		Map<String, dynamic> data, {
+		String? where,
+		List<dynamic>? whereArgs,
+	}) async {
+		if (_database == null) {
+			throw Exception('Database not initialized');
+		}
+		return await _database!.update(
+			table,
+			data,
+			where: where,
+			whereArgs: whereArgs,
+		);
+	}
+	
+	static Future<List<Map<String, dynamic>>> query(
+		String table, {
+		bool? distinct,
+		List<String>? columns,
+		String? where,
+		List<dynamic>? whereArgs,
+		String? groupBy,
+		String? having,
+		String? orderBy,
+		int? limit,
+		int? offset,
+	}) async {
+		if (_database == null) {
+			throw Exception('Database not initialized');
+		}
+		return await _database!.query(
+			table,
+			distinct: distinct,
+			columns: columns,
+			where: where,
+			whereArgs: whereArgs,
+			groupBy: groupBy,
+			having: having,
+			orderBy: orderBy,
+			limit: limit,
+			offset: offset,
+		);
+	}
+	
+	static Future<int> delete(
+		String table, {
+		String? where,
+		List<dynamic>? whereArgs,
+	}) async {
+		if (_database == null) {
+			throw Exception('Database not initialized');
+		}
+		return await _database!.delete(
+			table,
+			where: where,
+			whereArgs: whereArgs,
+		);
+	}
+}

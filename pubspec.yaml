@@ -1,0 +1,116 @@
+name: cat_hotel_pos
+description: A comprehensive POS system for cat hotel management with cross-platform support
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.16.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Core Flutter
+  cupertino_icons: ^1.0.2
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  
+  # UI Components
+  flutter_material_design_icons: ^1.1.7296
+  # google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  
+  # Navigation
+  go_router: ^12.1.3
+  
+  # Local Storage & Database
+  # hive: ^2.2.3
+  # hive_flutter: ^1.1.0
+  # sqflite: ^2.3.0
+  # sqflite_common_ffi: ^2.3.2
+  path: ^1.8.3
+  
+  # HTTP & API
+  dio: ^5.4.0
+  retrofit: ^4.0.3
+  
+  # JSON & Serialization
+  json_annotation: ^4.8.1
+  freezed_annotation: ^2.4.1
+  
+  # Date & Time
+  intl: ^0.18.1
+  
+  # File Handling
+  # file_picker: ^10.3.1
+  # image_picker: ^1.0.4
+  
+  # Printing & Receipts
+  # printing: ^5.11.1
+  # pdf: ^3.10.7
+  
+  # Barcode & QR
+  # mobile_scanner: ^3.5.6
+  # qr_flutter: ^4.1.0
+  
+  # Notifications
+  # flutter_local_notifications: ^16.3.0
+  
+  # Charts & Analytics
+  fl_chart: ^0.66.0
+  
+  # Calendar
+  table_calendar: ^3.0.9
+  
+  # Permissions
+  # permission_handler: ^11.1.0
+  
+  # Device Info
+  # device_info_plus: ^9.1.1
+  
+  # Network
+  # connectivity_plus: ^5.0.2
+  
+  # Crypto
+  crypto: ^3.0.3
+  
+  # UUID
+  uuid: ^4.2.1
+  
+  # Authentication & Security
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  local_auth: ^2.1.7
+  local_auth_android: ^1.0.35
+  local_auth_darwin: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # Code Generation
+  build_runner: ^2.4.7
+  riverpod_generator: ^2.3.9
+  json_serializable: ^6.7.1
+  freezed: ^2.4.6
+  retrofit_generator: ^8.0.3
+  
+  # Linting
+  flutter_lints: ^3.0.1
+  
+  # Testing
+  mockito: ^5.4.4
+  test: ^1.24.9
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/fonts/
+  
+
