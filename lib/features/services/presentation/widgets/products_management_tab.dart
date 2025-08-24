@@ -26,17 +26,21 @@ class _ProductsManagementTabState extends ConsumerState<ProductsManagementTab> {
   }
 
   Future<void> _loadProducts() async {
+    if (!mounted) return;
+    
     setState(() => _isLoading = true);
     try {
       final products = await _productDao.getAll();
-      setState(() {
-        _products = products;
-        _filteredProducts = products;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
+        setState(() {
+          _products = products;
+          _filteredProducts = products;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading products: $e')),
         );
@@ -45,6 +49,8 @@ class _ProductsManagementTabState extends ConsumerState<ProductsManagementTab> {
   }
 
   void _filterProducts() {
+    if (_products.isEmpty) return;
+    
     setState(() {
       _filteredProducts = _products.where((product) {
         final matchesCategory = _selectedCategory == null || product.category == _selectedCategory;
@@ -61,6 +67,31 @@ class _ProductsManagementTabState extends ConsumerState<ProductsManagementTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Add error boundary
+    if (_products.isEmpty && !_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                'No products available',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              Text(
+                'Please check if data has been properly loaded',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -189,7 +220,8 @@ class _ProductsManagementTabState extends ConsumerState<ProductsManagementTab> {
                           ],
                         ),
                       )
-                    : ListView.builder(
+                    : _filteredProducts.isNotEmpty
+                        ? ListView.builder(
                         itemCount: _filteredProducts.length,
                         itemBuilder: (context, index) {
                           final product = _filteredProducts[index];
@@ -218,7 +250,9 @@ class _ProductsManagementTabState extends ConsumerState<ProductsManagementTab> {
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  Row(
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
                                     children: [
                                       Chip(
                                         label: Text(product.category.name.toUpperCase()),
@@ -228,7 +262,6 @@ class _ProductsManagementTabState extends ConsumerState<ProductsManagementTab> {
                                           fontSize: 12,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
                                       Chip(
                                         label: Text(product.status?.name.toUpperCase() ?? 'UNKNOWN'),
                                         backgroundColor: _getStatusColor(product.status).withOpacity(0.2),
@@ -237,7 +270,6 @@ class _ProductsManagementTabState extends ConsumerState<ProductsManagementTab> {
                                           fontSize: 12,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
                                       Chip(
                                         label: Text('Stock: ${product.stockQuantity}'),
                                         backgroundColor: _getStockColor(product.stockQuantity, product.reorderPoint).withOpacity(0.2),
@@ -291,7 +323,8 @@ class _ProductsManagementTabState extends ConsumerState<ProductsManagementTab> {
                             ),
                           );
                         },
-                      ),
+                      )
+                        : const SizedBox.shrink(),
           ),
         ],
       ),

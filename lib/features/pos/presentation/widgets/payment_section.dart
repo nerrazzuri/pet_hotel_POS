@@ -11,10 +11,9 @@ class PaymentSection extends ConsumerStatefulWidget {
 
 class _PaymentSectionState extends ConsumerState<PaymentSection> {
   String _selectedPaymentMethod = 'cash';
+  String _selectedCardType = 'visa';
+  String _selectedEWallet = 'tng';
   final TextEditingController _amountPaidController = TextEditingController();
-  final TextEditingController _customerNameController = TextEditingController();
-  final TextEditingController _customerPhoneController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
 
   @override
   void initState() {
@@ -25,9 +24,6 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
   @override
   void dispose() {
     _amountPaidController.dispose();
-    _customerNameController.dispose();
-    _customerPhoneController.dispose();
-    _notesController.dispose();
     super.dispose();
   }
 
@@ -43,175 +39,94 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
     final changeAmount = amountPaid - cartTotal;
 
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey[200]!),
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                Icon(
-                  Icons.payment,
-                  color: Colors.teal,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Payment & Actions',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+      child: Column(
+        children: [
+          // Scrollable Content Area
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        
+                        
+                        // Payment Method
+                        if (cartItems.isNotEmpty) ...[
+                          _buildPaymentMethodSection(constraints),
+                          const SizedBox(height: 20),
+                        ],
+                        
+                        // Amount Paid
+                        if (cartItems.isNotEmpty) ...[
+                          _buildAmountPaidSection(changeAmount),
+                          const SizedBox(height: 20),
+                        ],
+                        
+                                                 // Notes Section removed
+                         if (cartItems.isEmpty) ...[
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.payment_outlined,
+                                    size: 48,
+                                    color: Colors.grey[400],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Add items to cart to enable payment',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
-            
-            const SizedBox(height: 20),
-            
-            // Customer Information
-            if (cartItems.isNotEmpty) ...[
-              _buildCustomerSection(),
-              const SizedBox(height: 20),
-            ],
-            
-            // Payment Method
-            if (cartItems.isNotEmpty) ...[
-              _buildPaymentMethodSection(),
-              const SizedBox(height: 20),
-            ],
-            
-            // Amount Paid
-            if (cartItems.isNotEmpty) ...[
-              _buildAmountPaidSection(changeAmount),
-              const SizedBox(height: 20),
-            ],
-            
-            // Action Buttons
-            if (cartItems.isNotEmpty) ...[
-              _buildActionButtons(),
-            ] else ...[
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.payment_outlined,
-                        size: 48,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Add items to cart to enable payment',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+          ),
+          
+          // Fixed Action Buttons at Bottom
+          if (cartItems.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Colors.grey[200]!, width: 1),
                 ),
               ),
-            ],
+              child: _buildActionButtons(),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildCustomerSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.person,
-              size: 20,
-              color: Colors.grey[600],
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Customer Information',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _customerNameController,
-          decoration: InputDecoration(
-            labelText: 'Customer Name',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.teal, width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          onChanged: (value) {
-            ref.read(currentCartProvider.notifier).setCustomerInfo(
-              null,
-              value.isEmpty ? null : value,
-              _customerPhoneController.text.isEmpty ? null : _customerPhoneController.text,
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _customerPhoneController,
-          decoration: InputDecoration(
-            labelText: 'Phone Number',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.teal, width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          onChanged: (value) {
-            ref.read(currentCartProvider.notifier).setCustomerInfo(
-              null,
-              _customerNameController.text.isEmpty ? null : _customerNameController.text,
-              value.isEmpty ? null : value,
-            );
-          },
-        ),
-      ],
-    );
-  }
 
-  Widget _buildPaymentMethodSection() {
+
+  Widget _buildPaymentMethodSection(BoxConstraints constraints) {
+    final isCompact = constraints.maxWidth < 400;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -223,49 +138,384 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
               color: Colors.grey[600],
             ),
             const SizedBox(width: 8),
-            Text(
-              'Payment Method',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+            Flexible(
+              child: Text(
+                'Payment Method',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          value: _selectedPaymentMethod,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.teal, width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        
+        // Payment Method Buttons - Responsive layout
+        if (isCompact) ...[
+          // Compact layout for narrow screens - 2x2 grid
+          Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildPaymentMethodButton(
+                      'cash',
+                      'Cash',
+                      Icons.money,
+                      Colors.green,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildPaymentMethodButton(
+                      'card',
+                      'Card',
+                      Icons.credit_card,
+                      Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildPaymentMethodButton(
+                      'e_wallet',
+                      'E-Wallet',
+                      Icons.account_balance_wallet,
+                      Colors.purple,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildPaymentMethodButton(
+                      'bank_transfer',
+                      'Bank Transfer',
+                      Icons.account_balance,
+                      Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          items: const [
-            DropdownMenuItem(value: 'cash', child: Text('Cash')),
-            DropdownMenuItem(value: 'card', child: Text('Card')),
-            DropdownMenuItem(value: 'e_wallet', child: Text('E-Wallet')),
-            DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-          ],
-          onChanged: (value) {
-            setState(() {
-              _selectedPaymentMethod = value!;
-            });
-          },
-        ),
+        ] else ...[
+          // Regular layout for wider screens - single row
+          Row(
+            children: [
+              Expanded(
+                child: _buildPaymentMethodButton(
+                  'cash',
+                  'Cash',
+                  Icons.money,
+                  Colors.green,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildPaymentMethodButton(
+                  'card',
+                  'Card',
+                  Icons.credit_card,
+                  Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildPaymentMethodButton(
+                  'e_wallet',
+                  'E-Wallet',
+                  Icons.account_balance_wallet,
+                  Colors.purple,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildPaymentMethodButton(
+                  'bank_transfer',
+                  'Bank Transfer',
+                  Icons.account_balance,
+                  Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ],
+        
+        const SizedBox(height: 16),
+        
+        // Payment Method Specific Options
+        if (_selectedPaymentMethod == 'card') _buildCardOptions(constraints),
+        if (_selectedPaymentMethod == 'e_wallet') _buildEWalletOptions(constraints),
+        if (_selectedPaymentMethod == 'bank_transfer') _buildBankTransferOptions(constraints),
       ],
+    );
+  }
+
+  Widget _buildPaymentMethodButton(String value, String label, IconData icon, Color color) {
+    final isSelected = _selectedPaymentMethod == value;
+    
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton(
+        onPressed: () {
+          setState(() {
+            _selectedPaymentMethod = value;
+          });
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSelected ? color : Colors.grey[100],
+          foregroundColor: isSelected ? Colors.white : Colors.grey[700],
+          elevation: isSelected ? 4 : 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardOptions(BoxConstraints constraints) {
+    final isCompact = constraints.maxWidth < 400;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select Card Type:',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (isCompact) ...[
+          // Compact layout - 2x2 grid
+          Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: _buildCardTypeButton('visa', 'Visa', Colors.blue[800]!)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildCardTypeButton('mastercard', 'Mastercard', Colors.red[600]!)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: _buildCardTypeButton('amex', 'Amex', Colors.blue[600]!)),
+                ],
+              ),
+            ],
+          ),
+        ] else ...[
+          // Regular layout - single row
+          Row(
+            children: [
+              Expanded(child: _buildCardTypeButton('visa', 'Visa', Colors.blue[800]!)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildCardTypeButton('mastercard', 'Mastercard', Colors.red[600]!)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildCardTypeButton('amex', 'Amex', Colors.blue[600]!)),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCardTypeButton(String type, String label, Color color) {
+    return SizedBox(
+      height: 40,
+      child: ElevatedButton(
+        onPressed: () {
+          setState(() {
+            _selectedCardType = type;
+          });
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _selectedCardType == type ? color : Colors.grey[100],
+          foregroundColor: _selectedCardType == type ? Colors.white : Colors.grey[700],
+          elevation: _selectedCardType == type ? 3 : 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEWalletOptions(BoxConstraints constraints) {
+    final isCompact = constraints.maxWidth < 400;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select E-Wallet:',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (isCompact) ...[
+          // Compact layout - 2x2 grid
+          Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: _buildEWalletButton('tng', 'Touch n Go', Colors.orange)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildEWalletButton('grabpay', 'GrabPay', Colors.green)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: _buildEWalletButton('mae', 'MAE', Colors.blue)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildEWalletButton('boost', 'Boost', Colors.purple)),
+                ],
+              ),
+            ],
+          ),
+        ] else ...[
+          // Regular layout - single row
+          Row(
+            children: [
+              Expanded(child: _buildEWalletButton('tng', 'Touch n Go', Colors.orange)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildEWalletButton('grabpay', 'GrabPay', Colors.green)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildEWalletButton('mae', 'MAE', Colors.blue)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildEWalletButton('boost', 'Boost', Colors.purple)),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildEWalletButton(String type, String label, Color color) {
+    return SizedBox(
+      height: 40,
+      child: ElevatedButton(
+        onPressed: () {
+          setState(() {
+            _selectedEWallet = type;
+          });
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _selectedEWallet == type ? color : Colors.grey[100],
+          foregroundColor: _selectedEWallet == type ? Colors.white : Colors.grey[700],
+          elevation: _selectedEWallet == type ? 3 : 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBankTransferOptions(BoxConstraints constraints) {
+    final isCompact = constraints.maxWidth < 400;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Bank Transfer Details:',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (isCompact) ...[
+          // Compact layout - stacked vertically
+          Column(
+            children: [
+              _buildBankInfoRow('Receiver Name:', 'Cat Hotel Pet Services'),
+              const SizedBox(height: 8),
+              _buildBankInfoRow('Bank Name:', 'Maybank Berhad'),
+              const SizedBox(height: 8),
+              _buildBankInfoRow('Account Number:', '1234-5678-9012-3456'),
+            ],
+          ),
+        ] else ...[
+          // Regular layout - single row
+          Row(
+            children: [
+              Expanded(child: _buildBankInfoRow('Receiver Name:', 'Cat Hotel Pet Services')),
+              const SizedBox(width: 8),
+              Expanded(child: _buildBankInfoRow('Bank Name:', 'Maybank Berhad')),
+              const SizedBox(width: 8),
+              Expanded(child: _buildBankInfoRow('Account Number:', '1234-5678-9012-3456')),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBankInfoRow(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[800],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -292,29 +542,43 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
           ],
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: _amountPaidController,
-          decoration: InputDecoration(
-            labelText: 'Amount',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.teal, width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            prefixText: '\$',
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        // Amount Display
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.grey[50],
           ),
-          keyboardType: TextInputType.number,
+          child: Column(
+            children: [
+              Text(
+                '\$${_amountPaidController.text.isEmpty ? '0.00' : _amountPaidController.text}',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Click numbers to enter amount',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
+        
+        const SizedBox(height: 16),
+        
+        // Calculator Keypad - only show for cash payments
+        if (_selectedPaymentMethod == 'cash') _buildCalculatorKeypad(),
         if (changeAmount > 0) ...[
           const SizedBox(height: 12),
           Container(
@@ -344,99 +608,48 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
     );
   }
 
+
+
   Widget _buildActionButtons() {
-    return Column(
+    return Row(
       children: [
-        // Notes
-        Row(
-          children: [
-            Icon(
-              Icons.note,
-              size: 20,
-              color: Colors.grey[600],
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Notes',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+        // Hold Cart Button
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () => _showHoldCartDialog(),
+            icon: const Icon(Icons.pause_circle_outline),
+            label: const Text('Hold'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange[600],
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
+              elevation: 2,
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _notesController,
-          decoration: InputDecoration(
-            labelText: 'Add notes...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.teal, width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
-          maxLines: 2,
-          onChanged: (value) {
-            ref.read(currentCartProvider.notifier).addNotes(value);
-          },
         ),
         
-        const SizedBox(height: 20),
+        const SizedBox(width: 12),
         
-        // Action Buttons
-        Row(
-          children: [
-            // Hold Cart Button
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _showHoldCartDialog(),
-                icon: const Icon(Icons.pause_circle_outline),
-                label: const Text('Hold'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange[600],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 2,
-                ),
+        // Complete Transaction Button
+        Expanded(
+          flex: 2,
+          child: ElevatedButton.icon(
+            onPressed: _canCompleteTransaction() ? _completeTransaction : null,
+            icon: const Icon(Icons.payment),
+            label: const Text('Complete Sale'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
+              elevation: 2,
             ),
-            
-            const SizedBox(width: 12),
-            
-            // Complete Transaction Button
-            Expanded(
-              flex: 2,
-              child: ElevatedButton.icon(
-                onPressed: _canCompleteTransaction() ? _completeTransaction : null,
-                icon: const Icon(Icons.payment),
-                label: const Text('Complete Sale'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 2,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -540,9 +753,6 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
 
   void _clearForm() {
     _amountPaidController.clear();
-    _customerNameController.clear();
-    _customerPhoneController.clear();
-    _notesController.clear();
     setState(() {
       _selectedPaymentMethod = 'cash';
     });
@@ -699,4 +909,130 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
       ),
     );
   }
+
+  Widget _buildCalculatorKeypad() {
+    return Column(
+      children: [
+        // Row 1: 1, 2, 3
+        Row(
+          children: [
+            Expanded(child: _buildCalculatorButton('1')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildCalculatorButton('2')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildCalculatorButton('3')),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Row 2: 4, 5, 6
+        Row(
+          children: [
+            Expanded(child: _buildCalculatorButton('4')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildCalculatorButton('5')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildCalculatorButton('6')),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Row 3: 7, 8, 9
+        Row(
+          children: [
+            Expanded(child: _buildCalculatorButton('7')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildCalculatorButton('8')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildCalculatorButton('9')),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Row 4: 0, Clear
+        Row(
+          children: [
+            Expanded(child: _buildCalculatorButton('0')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildCalculatorButton('C')),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalculatorButton(String text) {
+    bool isClearButton = text == 'C';
+    
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton(
+        onPressed: () => _onCalculatorButtonPressed(text),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isClearButton ? Colors.red[100] : Colors.grey[100],
+          foregroundColor: isClearButton ? Colors.red[700] : Colors.grey[700],
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isClearButton ? Colors.red[700] : Colors.grey[700],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onCalculatorButtonPressed(String button) {
+    if (button == 'C') {
+      // Clear the amount
+      _amountPaidController.clear();
+    } else {
+      // Add digit to amount with shifting logic
+      String currentAmount = _amountPaidController.text;
+      
+      if (currentAmount.isEmpty) {
+        // First digit - start with 0.0
+        _amountPaidController.text = '0.0$button';
+      } else {
+        // Remove the $ prefix if present and parse
+        String cleanAmount = currentAmount.replaceAll('\$', '');
+        
+        if (cleanAmount.contains('.')) {
+          // Already has decimal, implement shifting logic
+          List<String> parts = cleanAmount.split('.');
+          String wholePart = parts[0];
+          String decimalPart = parts[1];
+          
+          // Shift logic: move decimal part left and add new digit
+          if (decimalPart.length >= 2) {
+            // If we already have 2 decimal places, shift everything left
+            String newWholePart = wholePart + decimalPart[0];
+            String newDecimalPart = decimalPart[1] + button;
+            
+            // Remove leading zeros from whole part
+            newWholePart = newWholePart.replaceFirst(RegExp(r'^0+'), '');
+            if (newWholePart.isEmpty) newWholePart = '0';
+            
+            _amountPaidController.text = '$newWholePart.$newDecimalPart';
+          } else {
+            // Add to decimal part
+            _amountPaidController.text = '$wholePart.${decimalPart}${button}';
+          }
+        } else {
+          // No decimal yet, add one and append
+          _amountPaidController.text = '$cleanAmount.0$button';
+        }
+      }
+    }
+    
+    setState(() {});
+  }
 }
+
+
+
+
+

@@ -17,8 +17,9 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
   CalendarViewType _viewType = CalendarViewType.weekly;
   DateTime _selectedDate = DateTime.now();
   DateTime _focusedDate = DateTime.now();
-  // TODO: Implement drag and drop functionality
-  // Booking? _draggedBooking;
+  // Implemented drag and drop functionality
+  Booking? _draggedBooking;
+  String? _draggedOverRoomId;
 
   @override
   Widget build(BuildContext context) {
@@ -114,29 +115,302 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Time slots header
-          _buildTimeHeader(),
-          
-          // Room columns with time slots
-          ...rooms.map((room) => _buildRoomTimeColumn(room, dayBookings)),
+          // Time slots
+          ...List.generate(24, (hour) {
+            final timeBookings = dayBookings.where((booking) {
+              final checkInHour = booking.checkInTime.hour;
+              final checkOutHour = booking.checkOutTime.hour;
+              return hour >= checkInHour && hour < checkOutHour;
+            }).toList();
+
+            return Container(
+              height: 60,
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Time label
+                  SizedBox(
+                    width: 80,
+                    child: Text(
+                      '${hour.toString().padLeft(2, '0')}:00',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  // Room columns
+                  Expanded(
+                    child: Row(
+                      children: rooms.map((room) {
+                        final roomBookings = timeBookings.where((b) => b.roomId == room.id).toList();
+                        return Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border(
+                                right: BorderSide(color: Colors.grey.shade300),
+                              ),
+                            ),
+                            child: _buildTimeSlot(room, roomBookings, hour),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildWeeklyView(List<Booking> bookings, List<Room> rooms) {
-    final weekDates = _getWeekDates(_focusedDate);
-    
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SingleChildScrollView(
+  Widget _buildTimeSlot(Room room, List<Booking> bookings, int hour) {
+    if (bookings.isEmpty) {
+      return DragTarget<Booking>(
+        onWillAccept: (data) => data != null,
+        onAccept: (booking) => _handleBookingDrop(booking, room.id, hour),
+        builder: (context, candidateData, rejectedData) {
+          return Container(
+            color: candidateData.isNotEmpty ? Colors.blue.withOpacity(0.1) : null,
+            child: const Center(
+              child: Text('', style: TextStyle(fontSize: 10)),
+            ),
+          );
+        },
+      );
+    }
+
+    final booking = bookings.first;
+    return Draggable<Booking>(
+      data: booking,
+      feedback: Material(
+        elevation: 8,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '${booking.petName}',
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ),
+      ),
+      childWhenDragging: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+        ),
+        child: const Center(
+          child: Text('', style: TextStyle(fontSize: 10)),
+        ),
+      ),
+      onDragStarted: () {
+        setState(() {
+          _draggedBooking = booking;
+        });
+      },
+      onDragEnd: (details) {
+        setState(() {
+          _draggedBooking = null;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: _getBookingColor(booking.status),
+          borderRadius: BorderRadius.circular(4),
+        ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Week header
-            _buildWeekHeader(weekDates),
-            
-            // Room rows with week columns
-            ...rooms.map((room) => _buildRoomWeekRow(room, weekDates, bookings)),
+            Text(
+              booking.petName,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              booking.customerName,
+              style: const TextStyle(fontSize: 8, color: Colors.white70),
+            ),
+            Text(
+              '${booking.checkInTime.hour}:${booking.checkInTime.minute.toString().padLeft(2, '0')} - ${booking.checkOutTime.hour}:${booking.checkOutTime.minute.toString().padLeft(2, '0')}',
+              style: const TextStyle(fontSize: 8, color: Colors.white70),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeeklyView(List<Booking> bookings, List<Room> rooms) {
+    final weekStart = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
+    final weekDays = List.generate(7, (index) => weekStart.add(Duration(days: index)));
+
+    return Column(
+      children: [
+        // Week header
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 80), // Time column spacer
+              ...weekDays.map((date) => Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    border: Border(right: BorderSide(color: Colors.grey.shade300)),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        _getDayName(date.weekday),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '${date.day}/${date.month}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              )),
+            ],
+          ),
+        ),
+        // Week content
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ...List.generate(24, (hour) {
+                  return Container(
+                    height: 60,
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Time label
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            '${hour.toString().padLeft(2, '0')}:00',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        // Day columns
+                        ...weekDays.map((date) {
+                          final dayBookings = _getBookingsForDate(date, bookings);
+                          final timeBookings = dayBookings.where((booking) {
+                            final checkInHour = booking.checkInTime.hour;
+                            final checkOutHour = booking.checkOutTime.hour;
+                            return hour >= checkInHour && hour < checkOutHour;
+                          }).toList();
+
+                          return Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border(right: BorderSide(color: Colors.grey.shade300)),
+                              ),
+                              child: _buildWeeklyTimeSlot(timeBookings, hour, date),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeeklyTimeSlot(List<Booking> bookings, int hour, DateTime date) {
+    if (bookings.isEmpty) {
+      return DragTarget<Booking>(
+        onWillAccept: (data) => data != null,
+        onAccept: (booking) => _handleWeeklyBookingDrop(booking, date, hour),
+        builder: (context, candidateData, rejectedData) {
+          return Container(
+            color: candidateData.isNotEmpty ? Colors.blue.withOpacity(0.1) : null,
+            child: const Center(
+              child: Text('', style: TextStyle(fontSize: 10)),
+            ),
+          );
+        },
+      );
+    }
+
+    final booking = bookings.first;
+    return Draggable<Booking>(
+      data: booking,
+      feedback: Material(
+        elevation: 8,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '${booking.petName}',
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
+        ),
+      ),
+      childWhenDragging: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+        ),
+        child: const Center(
+          child: Text('', style: TextStyle(fontSize: 10)),
+        ),
+      ),
+      onDragStarted: () {
+        setState(() {
+          _draggedBooking = booking;
+        });
+      },
+      onDragEnd: (details) {
+        setState(() {
+          _draggedBooking = null;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: _getBookingColor(booking.status),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              booking.petName,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              booking.roomNumber,
+              style: const TextStyle(fontSize: 8, color: Colors.white70),
+            ),
           ],
         ),
       ),
@@ -144,391 +418,197 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
   }
 
   Widget _buildMonthlyView(List<Booking> bookings, List<Room> rooms) {
-    final monthDates = _getMonthDates(_focusedDate);
+    final monthStart = DateTime(_selectedDate.year, _selectedDate.month, 1);
+    final monthEnd = DateTime(_selectedDate.year, _selectedDate.month + 1, 0);
+    final firstWeekday = monthStart.weekday;
+    final daysInMonth = monthEnd.day;
+
+    final calendarDays = <DateTime>[];
     
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // Month grid
-          _buildMonthGrid(monthDates, bookings, rooms),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeHeader() {
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 120,
-            child: Center(
-              child: Text(
-                'Time',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 24,
-              itemBuilder: (context, index) {
-                return Container(
-                  width: 80,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    border: Border(right: BorderSide(color: Colors.grey.shade200)),
-                  ),
-                  child: Text('${index.toString().padLeft(2, '0')}:00'),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoomTimeColumn(Room room, List<Booking> dayBookings) {
-    final roomBookings = dayBookings.where((b) => b.roomId == room.id).toList();
+    // Add previous month's days to fill first week
+    for (int i = firstWeekday - 1; i > 0; i--) {
+      calendarDays.add(monthStart.subtract(Duration(days: i)));
+    }
     
-    return Container(
-      height: 600,
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-      ),
-      child: Row(
-        children: [
-          // Room info
-          SizedBox(
-            width: 120,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _getRoomStatusColor(room.status),
-                border: Border(right: BorderSide(color: Colors.grey.shade300)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    room.roomNumber,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    room.name,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  Text(
-                    room.status.name,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Time slots
-          Expanded(
-            child: Stack(
-              children: [
-                // Time grid
-                _buildTimeGrid(),
-                
-                // Bookings
-                ...roomBookings.map((booking) => _buildBookingSlot(booking)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeGrid() {
-    return Column(
-      children: List.generate(24, (index) {
-        return Container(
-          height: 25,
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: Colors.grey.shade100),
-              right: BorderSide(color: Colors.grey.shade200),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildBookingSlot(Booking booking) {
-    final startHour = booking.checkInTime.hour;
-    final duration = _calculateDuration(booking.checkInTime, booking.checkOutTime);
+    // Add current month's days
+    for (int i = 1; i <= daysInMonth; i++) {
+      calendarDays.add(DateTime(_selectedDate.year, _selectedDate.month, i));
+    }
     
-    return Positioned(
-      left: startHour * 80.0,
-      top: startHour * 25.0,
-      child: Container(
-        width: duration * 80.0,
-        height: duration * 25.0,
-        margin: const EdgeInsets.all(1),
-        decoration: BoxDecoration(
-          color: _getBookingStatusColor(booking.status),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Colors.white, width: 1),
-        ),
-        child: Center(
-          child: Text(
-            '${booking.customerName}\n${booking.petName}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+    // Add next month's days to fill last week
+    final remainingDays = 42 - calendarDays.length; // 6 weeks * 7 days
+    for (int i = 1; i <= remainingDays; i++) {
+      calendarDays.add(monthEnd.add(Duration(days: i)));
+    }
 
-  Widget _buildWeekHeader(List<DateTime> weekDates) {
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 120,
-            child: Center(
-              child: Text(
-                'Room',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            ),
-          ),
-          ...weekDates.map((date) => Expanded(
-            child: Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                border: Border(right: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _getDayName(date.weekday),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  Text(
-                    '${date.day}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
-              ),
-            ),
-          )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRoomWeekRow(Room room, List<DateTime> weekDates, List<Booking> bookings) {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-      ),
-      child: Row(
-        children: [
-          // Room info
-          SizedBox(
-            width: 120,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: _getRoomStatusColor(room.status),
-                border: Border(right: BorderSide(color: Colors.grey.shade300)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    room.roomNumber,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    room.name,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Week columns
-          ...weekDates.map((date) => Expanded(
-            child: _buildWeekDayCell(room, date, bookings),
-          )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeekDayCell(Room room, DateTime date, List<Booking> bookings) {
-    final dayBookings = _getBookingsForDate(date, bookings)
-        .where((b) => b.roomId == room.id)
-        .toList();
-    
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(right: BorderSide(color: Colors.grey.shade200)),
-      ),
-      child: Stack(
-        children: [
-          // Background
-          Container(
-            color: dayBookings.isEmpty ? Colors.green.shade50 : Colors.orange.shade100,
-          ),
-          
-          // Bookings
-          ...dayBookings.map((booking) => _buildWeekDayBooking(booking)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeekDayBooking(Booking booking) {
-    return Container(
-      margin: const EdgeInsets.all(2),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: _getBookingStatusColor(booking.status),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        '${booking.customerName}\n${booking.petName}',
-        style: const TextStyle(
-          fontSize: 8,
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-
-  Widget _buildMonthGrid(List<DateTime> monthDates, List<Booking> bookings, List<Room> rooms) {
     return Column(
       children: [
         // Month header
         Container(
           padding: const EdgeInsets.all(16),
-          child: Text(
-            '${_focusedDate.month}/${_focusedDate.year}',
-            style: Theme.of(context).textTheme.headlineSmall,
+          child: Row(
+            children: [
+              const SizedBox(width: 80), // Time column spacer
+              ...['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(
+                    day,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              )),
+            ],
           ),
         ),
-        
-        // Calendar grid
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            childAspectRatio: 1.2,
+        // Month content
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ...List.generate(6, (weekIndex) {
+                  final weekDays = calendarDays.skip(weekIndex * 7).take(7).toList();
+                  return Container(
+                    height: 100,
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Time label (showing week number for monthly view)
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            'Week ${weekIndex + 1}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        // Day columns
+                        ...weekDays.map((date) {
+                          final dayBookings = _getBookingsForDate(date, bookings);
+                          final isCurrentMonth = date.month == _selectedDate.month;
+                          
+                          return Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border(right: BorderSide(color: Colors.grey.shade300)),
+                                color: isCurrentMonth ? null : Colors.grey.shade50,
+                              ),
+                              child: _buildMonthlyDaySlot(dayBookings, date, isCurrentMonth),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
-          itemCount: monthDates.length,
-          itemBuilder: (context, index) {
-            final date = monthDates[index];
-            final dayBookings = _getBookingsForDate(date, bookings);
-            
-            return _buildMonthDayCell(date, dayBookings, rooms);
-          },
         ),
       ],
     );
   }
 
-  Widget _buildMonthDayCell(DateTime date, List<Booking> dayBookings, List<Room> rooms) {
-    final isToday = _isSameDay(date, DateTime.now());
-    
+  Widget _buildMonthlyDaySlot(List<Booking> bookings, DateTime date, bool isCurrentMonth) {
     return Container(
-      margin: const EdgeInsets.all(1),
-      decoration: BoxDecoration(
-        color: isToday ? Colors.blue.shade100 : Colors.grey.shade50,
-        border: Border.all(color: Colors.grey.shade300),
-      ),
+      padding: const EdgeInsets.all(4),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Date header
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: isToday ? Colors.blue : Colors.grey.shade200,
-            ),
-            child: Text(
-              '${date.day}',
-              style: TextStyle(
-                color: isToday ? Colors.white : Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
+          Text(
+            '${date.day}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isCurrentMonth ? Colors.black : Colors.grey,
             ),
           ),
-          
-          // Booking count
-          if (dayBookings.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(4),
+          if (bookings.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            ...bookings.take(3).map((booking) => Container(
+              margin: const EdgeInsets.only(bottom: 2),
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: _getBookingColor(booking.status),
+                borderRadius: BorderRadius.circular(2),
+              ),
               child: Text(
-                '${dayBookings.length} bookings',
-                style: Theme.of(context).textTheme.bodySmall,
+                '${booking.petName}',
+                style: const TextStyle(
+                  fontSize: 8,
+                  color: Colors.white,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          
-          // Room status summary
-          Expanded(
-            child: _buildMonthDayRoomStatus(date, rooms, dayBookings),
-          ),
+            )),
+            if (bookings.length > 3)
+              Text(
+                '+${bookings.length - 3} more',
+                style: const TextStyle(fontSize: 8, color: Colors.grey),
+              ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildMonthDayRoomStatus(DateTime date, List<Room> rooms, List<Booking> dayBookings) {
-    final occupiedRooms = dayBookings.map((b) => b.roomId).toSet();
-    final availableRooms = rooms.where((r) => !occupiedRooms.contains(r.id)).length;
-    
-    return Container(
-      padding: const EdgeInsets.all(4),
-      child: Column(
-        children: [
-          Text(
-            'Available: $availableRooms',
-            style: TextStyle(
-              color: Colors.green.shade700,
-              fontSize: 10,
-            ),
-          ),
-          Text(
-            'Occupied: ${occupiedRooms.length}',
-            style: TextStyle(
-              color: Colors.orange.shade700,
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ),
-    );
+  // Drag and drop handlers
+  void _handleBookingDrop(Booking booking, String roomId, int hour) async {
+    try {
+      final bookingService = ref.read(bookingServiceProvider);
+      
+      // Update the booking with new time
+      final updatedBooking = await bookingService.updateBooking(
+        id: booking.id,
+        checkInTime: BookingTimeOfDay(hour: hour, minute: 0),
+        checkOutTime: BookingTimeOfDay(hour: hour + 1, minute: 0),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Booking moved to ${updatedBooking.roomNumber}')),
+        );
+        // Refresh the bookings list
+        ref.invalidate(bookingsProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error moving booking: $e')),
+        );
+      }
+    }
+  }
+
+  void _handleWeeklyBookingDrop(Booking booking, DateTime date, int hour) async {
+    try {
+      final bookingService = ref.read(bookingServiceProvider);
+      
+      // Update the booking with new date and time
+      final updatedBooking = await bookingService.updateBooking(
+        id: booking.id,
+        checkInDate: date,
+        checkOutDate: date.add(const Duration(days: 1)),
+        checkInTime: BookingTimeOfDay(hour: hour, minute: 0),
+        checkOutTime: BookingTimeOfDay(hour: hour + 1, minute: 0),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Booking moved to ${date.toString().split(' ')[0]}')),
+        );
+        // Refresh the bookings list
+        ref.invalidate(bookingsProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error moving booking: $e')),
+        );
+      }
+    }
   }
 
   // Helper methods
@@ -567,8 +647,16 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
   }
 
   String _getDayName(int weekday) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[weekday - 1];
+    switch (weekday) {
+      case 1: return 'Mon';
+      case 2: return 'Tue';
+      case 3: return 'Wed';
+      case 4: return 'Thu';
+      case 5: return 'Fri';
+      case 6: return 'Sat';
+      case 7: return 'Sun';
+      default: return '';
+    }
   }
 
   String _getDateRangeText() {
@@ -642,6 +730,27 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
         return Colors.orange;
       default:
         return Colors.grey;
+    }
+  }
+
+  Color _getBookingColor(BookingStatus status) {
+    switch (status) {
+      case BookingStatus.confirmed:
+        return Colors.blue;
+      case BookingStatus.checkedIn:
+        return Colors.green;
+      case BookingStatus.checkedOut:
+        return Colors.grey;
+      case BookingStatus.cancelled:
+        return Colors.red;
+      case BookingStatus.pending:
+        return Colors.orange;
+      case BookingStatus.noShow:
+        return Colors.purple;
+      case BookingStatus.completed:
+        return Colors.teal;
+      default:
+        return Colors.blue;
     }
   }
 }

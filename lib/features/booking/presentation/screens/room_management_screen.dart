@@ -468,6 +468,7 @@ class _CreateRoomDialogState extends ConsumerState<_CreateRoomDialog> {
   final _notesController = TextEditingController();
   
   RoomType _selectedType = RoomType.standard;
+  RoomStatus _selectedStatus = RoomStatus.available;
   bool _isLoading = false;
 
   @override
@@ -482,6 +483,59 @@ class _CreateRoomDialogState extends ConsumerState<_CreateRoomDialog> {
     _specificationsController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveRoom() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final roomService = ref.read(roomServiceProvider);
+      
+      // Parse amenities from comma-separated string
+      final amenities = _amenitiesController.text.isNotEmpty 
+          ? _amenitiesController.text.split(',').map((e) => e.trim()).toList()
+          : <String>[];
+
+      // Parse specifications from comma-separated string
+      final specifications = _specificationsController.text.isNotEmpty
+          ? _specificationsController.text.split(',').map((e) => e.trim()).toList().asMap().map((index, value) => MapEntry('spec_$index', value))
+          : <String, dynamic>{};
+
+      await roomService.createRoom(
+        roomNumber: _roomNumberController.text.trim(),
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isNotEmpty ? _descriptionController.text.trim() : '',
+        type: _selectedType,
+        status: _selectedStatus,
+        basePricePerNight: double.parse(_basePriceController.text),
+        peakSeasonPrice: double.parse(_peakPriceController.text),
+        capacity: int.parse(_capacityController.text),
+        amenities: amenities,
+        specifications: specifications,
+        notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Room created successfully!')),
+        );
+        // Refresh the rooms list
+        ref.invalidate(roomsProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating room: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -532,136 +586,134 @@ class _CreateRoomDialogState extends ConsumerState<_CreateRoomDialog> {
                 
                 // Room Type
                 DropdownButtonFormField<RoomType>(
-                  initialValue: _selectedType,
+                  value: _selectedType,
                   decoration: const InputDecoration(
                     labelText: 'Room Type *',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.category),
                   ),
-                  items: RoomType.values.map((type) {
-                    return DropdownMenuItem(
-                      value: type,
-                      child: Text(type.name.toUpperCase()),
-                    );
-                  }).toList(),
+                  items: RoomType.values.map((type) => DropdownMenuItem(
+                    value: type,
+                    child: Text(type.name.toUpperCase()),
+                  )).toList(),
                   onChanged: (value) {
-                    setState(() {
-                      _selectedType = value!;
-                    });
+                    if (value != null) {
+                      setState(() {
+                        _selectedType = value;
+                      });
+                    }
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
+                // Description
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.description),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+
+                // Pricing
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _basePriceController,
+                        decoration: const InputDecoration(
+                          labelText: 'Base Price per Night *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.attach_money),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Base price is required';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Please enter a valid number';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _peakPriceController,
+                        decoration: const InputDecoration(
+                          labelText: 'Peak Season Price *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.trending_up),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Peak price is required';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Please enter a valid number';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
                 // Capacity
                 TextFormField(
                   controller: _capacityController,
                   decoration: const InputDecoration(
-                    labelText: 'Capacity *',
+                    labelText: 'Capacity (Number of Pets) *',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.people),
+                    prefixIcon: Icon(Icons.pets),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Capacity is required';
                     }
-                    final capacity = int.tryParse(value);
-                    if (capacity == null || capacity <= 0) {
-                      return 'Capacity must be a positive number';
+                    if (int.tryParse(value) == null) {
+                      return 'Please enter a valid number';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
-                
-                // Base Price
-                TextFormField(
-                  controller: _basePriceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Base Price per Night *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Base price is required';
-                    }
-                    final price = double.tryParse(value);
-                    if (price == null || price < 0) {
-                      return 'Price must be a positive number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Peak Season Price
-                TextFormField(
-                  controller: _peakPriceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Peak Season Price *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.trending_up),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Peak season price is required';
-                    }
-                    final price = double.tryParse(value);
-                    if (price == null || price < 0) {
-                      return 'Price must be a positive number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Description
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.description),
-                  ),
-                  maxLines: 3,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Description is required';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
+
+                // TODO: Fix amenities and specifications access
                 // Amenities
                 TextFormField(
                   controller: _amenitiesController,
                   decoration: const InputDecoration(
-                    labelText: 'Amenities',
+                    labelText: 'Amenities (comma-separated)',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.room_service),
-                    hintText: 'Separate with commas (e.g., WiFi, TV, AC)',
+                    prefixIcon: Icon(Icons.room),
+                    hintText: 'e.g., Window, Scratching post, Toys',
                   ),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Specifications
                 TextFormField(
                   controller: _specificationsController,
                   decoration: const InputDecoration(
-                    labelText: 'Specifications',
+                    labelText: 'Specifications (comma-separated)',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.info),
-                    hintText: 'Room dimensions, features, etc.',
+                    hintText: 'e.g., 2m x 2m, 1.5m height',
                   ),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Notes
                 TextFormField(
                   controller: _notesController,
@@ -670,7 +722,7 @@ class _CreateRoomDialogState extends ConsumerState<_CreateRoomDialog> {
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.note),
                   ),
-                  maxLines: 2,
+                  maxLines: 3,
                 ),
               ],
             ),
@@ -683,106 +735,17 @@ class _CreateRoomDialogState extends ConsumerState<_CreateRoomDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _isLoading ? null : _createRoom,
+          onPressed: _isLoading ? null : _saveRoom,
           child: _isLoading
               ? const SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: 20,
+                  height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Text('Create Room'),
         ),
       ],
     );
-  }
-
-  Future<void> _createRoom() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final amenities = _amenitiesController.text.isNotEmpty
-          ? _amenitiesController.text.split(',').map((e) => e.trim()).toList()
-          : <String>[];
-      
-      // Parse specifications as a simple map
-      final specifications = <String, dynamic>{};
-      if (_specificationsController.text.isNotEmpty) {
-        final specs = _specificationsController.text.split(',').map((e) => e.trim()).toList();
-        for (final spec in specs) {
-          if (spec.contains(':')) {
-            final parts = spec.split(':');
-            if (parts.length == 2) {
-              specifications[parts[0].trim()] = parts[1].trim();
-            }
-          } else {
-            specifications[spec] = true;
-          }
-        }
-      }
-
-      final room = Room(
-        id: const Uuid().v4(),
-        roomNumber: _roomNumberController.text.trim(),
-        name: _nameController.text.trim(),
-        type: _selectedType,
-        status: RoomStatus.available,
-        capacity: int.parse(_capacityController.text),
-        basePricePerNight: double.parse(_basePriceController.text),
-        peakSeasonPrice: double.parse(_peakPriceController.text),
-        description: _descriptionController.text.trim(),
-        amenities: amenities,
-        specifications: specifications,
-        isActive: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        notes: _notesController.text.isNotEmpty ? _notesController.text.trim() : null,
-      );
-
-      // Use ConsumerStatefulWidget to access ref
-      final roomService = ref.read(roomServiceProvider);
-      await roomService.createRoom(
-        roomNumber: room.roomNumber,
-        name: room.name,
-        type: room.type,
-        status: room.status,
-        capacity: room.capacity,
-        basePricePerNight: room.basePricePerNight,
-        peakSeasonPrice: room.peakSeasonPrice,
-        description: room.description,
-        amenities: room.amenities,
-        specifications: room.specifications,
-        notes: room.notes,
-      );
-
-      if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Room ${room.name} created successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error creating room: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 }
 
@@ -918,7 +881,7 @@ class _EditRoomDialogState extends ConsumerState<_EditRoomDialog> {
                 
                 // Room Status
                 DropdownButtonFormField<RoomStatus>(
-                  initialValue: _selectedStatus,
+                  value: _selectedStatus,
                   decoration: const InputDecoration(
                     labelText: 'Room Status *',
                     border: OutlineInputBorder(),
@@ -931,9 +894,11 @@ class _EditRoomDialogState extends ConsumerState<_EditRoomDialog> {
                     );
                   }).toList(),
                   onChanged: (value) {
-                    setState(() {
-                      _selectedStatus = value!;
-                    });
+                    if (value != null) {
+                      setState(() {
+                        _selectedStatus = value;
+                      });
+                    }
                   },
                 ),
                 const SizedBox(height: 16),
@@ -1465,7 +1430,7 @@ class _StatusChangeDialogState extends ConsumerState<_StatusChangeDialog> {
           Text('Current Status: ${widget.room.status.name.toUpperCase()}'),
           const SizedBox(height: 16),
           DropdownButtonFormField<RoomStatus>(
-            initialValue: _selectedStatus,
+            value: _selectedStatus,
             decoration: const InputDecoration(
               labelText: 'New Status *',
               border: OutlineInputBorder(),
@@ -1478,9 +1443,11 @@ class _StatusChangeDialogState extends ConsumerState<_StatusChangeDialog> {
               );
             }).toList(),
             onChanged: (value) {
-              setState(() {
-                _selectedStatus = value!;
-              });
+              if (value != null) {
+                setState(() {
+                  _selectedStatus = value;
+                });
+              }
             },
           ),
         ],

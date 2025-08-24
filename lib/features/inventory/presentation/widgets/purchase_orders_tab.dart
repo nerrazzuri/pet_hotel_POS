@@ -98,18 +98,37 @@ class _PurchaseOrdersTabState extends ConsumerState<PurchaseOrdersTab> {
             const SizedBox(height: 4),
             Text(
               'Manage and track all purchase orders',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
             ),
           ],
         ),
-        ElevatedButton.icon(
-          onPressed: () => _showCreatePurchaseOrderDialog(),
-          icon: const Icon(Icons.add),
-          label: const Text('New Purchase Order'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
-          ),
+        Row(
+          children: [
+            // Purchase Order Analytics Button
+            OutlinedButton.icon(
+              onPressed: () => _showPurchaseOrderAnalytics(context),
+              icon: const Icon(Icons.analytics),
+              label: const Text('Analytics'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.purple[600],
+                side: BorderSide(color: Colors.purple[600]!),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Create Purchase Order Button
+            ElevatedButton.icon(
+              onPressed: () => _showCreatePurchaseOrderDialog(),
+              icon: const Icon(Icons.add_shopping_cart),
+              label: const Text('Create PO'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -309,10 +328,66 @@ class _PurchaseOrdersTabState extends ConsumerState<PurchaseOrdersTab> {
     );
   }
 
+  void _showPurchaseOrderAnalytics(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Purchase Order Analytics'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Purchase order analytics and insights coming soon!'),
+            SizedBox(height: 16),
+            Text(
+              'Features will include:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Spending trends by supplier'),
+            Text('• Order frequency analysis'),
+            Text('• Cost savings opportunities'),
+            Text('• Delivery performance metrics'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showCreatePurchaseOrderDialog() {
     showDialog(
       context: context,
-      builder: (context) => const _CreatePurchaseOrderDialog(),
+      builder: (context) => AlertDialog(
+        title: const Text('Create Purchase Order'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Purchase order creation wizard coming soon!'),
+            SizedBox(height: 16),
+            Text(
+              'Features will include:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text('• Supplier selection'),
+            Text('• Product catalog browsing'),
+            Text('• Quantity and pricing input'),
+            Text('• Delivery date scheduling'),
+            Text('• Approval workflow'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 

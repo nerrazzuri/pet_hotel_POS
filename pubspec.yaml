@@ -86,6 +86,12 @@ dependencies:
   local_auth: ^2.1.7
   local_auth_android: ^1.0.35
   local_auth_darwin: ^1.6.0
+  
+  # URL Handling
+  url_launcher: ^6.2.4
+  
+  # Window Management (Windows)
+  window_manager: ^0.3.8
 
 dev_dependencies:
   flutter_test:

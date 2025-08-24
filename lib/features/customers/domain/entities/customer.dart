@@ -18,6 +18,23 @@ enum CustomerStatus {
   suspended,
 }
 
+extension CustomerStatusExtension on CustomerStatus {
+  String get displayName {
+    switch (this) {
+      case CustomerStatus.active:
+        return 'Active';
+      case CustomerStatus.inactive:
+        return 'Inactive';
+      case CustomerStatus.blacklisted:
+        return 'Blacklisted';
+      case CustomerStatus.pendingVerification:
+        return 'Pending Verification';
+      case CustomerStatus.suspended:
+        return 'Suspended';
+    }
+  }
+}
+
 @JsonEnum()
 enum LoyaltyTier {
   @JsonValue('bronze')
@@ -46,6 +63,25 @@ enum CustomerSource {
   advertisement,
   @JsonValue('other')
   other,
+}
+
+extension CustomerSourceExtension on CustomerSource {
+  String get displayName {
+    switch (this) {
+      case CustomerSource.walkIn:
+        return 'Walk In';
+      case CustomerSource.onlineBooking:
+        return 'Online Booking';
+      case CustomerSource.referral:
+        return 'Referral';
+      case CustomerSource.socialMedia:
+        return 'Social Media';
+      case CustomerSource.advertisement:
+        return 'Advertisement';
+      case CustomerSource.other:
+        return 'Other';
+    }
+  }
 }
 
 

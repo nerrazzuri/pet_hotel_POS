@@ -1,0 +1,630 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User management
+model User {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  email       String   @unique
+  password    String
+  fullName    String
+  role        UserRole
+  permissions String[] // JSON array of permissions
+  isActive    Boolean  @default(true)
+  lastLogin   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  auditLogs AuditLog[]
+  shifts    Shift[]
+  transactions Transaction[]
+  bookings  Booking[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  CASHIER
+  GROOMER
+  HOUSEKEEPER
+  RECEPTIONIST
+}
+
+// Customer management
+model Customer {
+  id              String   @id @default(cuid())
+  customerCode    String   @unique
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String
+  address         String?
+  emergencyContact String?
+  emergencyPhone  String?
+  loyaltyPoints   Int      @default(0)
+  loyaltyTier     LoyaltyTier @default(BRONZE)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  pets         Pet[]
+  bookings     Booking[]
+  transactions Transaction[]
+  loyaltyHistory LoyaltyHistory[]
+
+  @@map("customers")
+}
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+// Pet management
+model Pet {
+  id              String   @id @default(cuid())
+  customerId      String
+  name            String
+  species         String   @default("Cat")
+  breed           String?
+  color           String?
+  weight          Float?
+  birthDate       DateTime?
+  gender          Gender
+  temperament     String?
+  medicalNotes    String?
+  feedingSchedule String?
+  allergies       String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  customer        Customer @relation(fields: [customerId], references: [id])
+  vaccinations    Vaccination[]
+  bookings       Booking[]
+  groomingRecords GroomingRecord[]
+
+  @@map("pets")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
+// Vaccination records
+model Vaccination {
+  id          String   @id @default(cuid())
+  petId       String
+  vaccineType String
+  dateGiven   DateTime
+  expiryDate  DateTime
+  batchNumber String?
+  veterinarian String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  pet Pet @relation(fields: [petId], references: [id])
+
+  @@map("vaccinations")
+}
+
+// Room management
+model Room {
+  id            String   @id @default(cuid())
+  roomNumber    String   @unique
+  roomType      RoomType
+  capacity      Int      @default(1)
+  pricePerNight Float
+  amenities     String[] // JSON array
+  status        RoomStatus @default(AVAILABLE)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  bookings     Booking[]
+  maintenance  Maintenance[]
+
+  @@map("rooms")
+}
+
+enum RoomType {
+  SINGLE
+  DELUXE
+  SUITE
+  VIP_SUITE
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  CLEANING
+  RESERVED
+}
+
+// Booking management
+model Booking {
+  id             String        @id @default(cuid())
+  bookingNumber  String        @unique
+  customerId     String
+  petId          String
+  roomId         String
+  checkInDate    DateTime
+  checkOutDate   DateTime
+  checkInTime    DateTime?
+  checkOutTime   DateTime?
+  status         BookingStatus @default(CONFIRMED)
+  totalAmount    Float
+  depositAmount  Float         @default(0)
+  notes          String?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  pet           Pet           @relation(fields: [petId], references: [id])
+  room          Room          @relation(fields: [roomId], references: [id])
+  user          User?         @relation(fields: [userId], references: [id])
+  userId        String?
+  services      BookingService[]
+  transactions  Transaction[]
+
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+  NO_SHOW
+}
+
+// Service management
+model Service {
+  id          String   @id @default(cuid())
+  serviceCode String   @unique
+  name        String
+  category    ServiceCategory
+  description String?
+  price       Float
+  duration    Int?     // in minutes
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  bookings   BookingService[]
+  packages   PackageService[]
+
+  @@map("services")
+}
+
+enum ServiceCategory {
+  BOARDING
+  DAYCARE
+  GROOMING
+  ADD_ONS
+  RETAIL
+}
+
+// Product management
+model Product {
+  id             String   @id @default(cuid())
+  productCode    String   @unique
+  barcode        String?  @unique
+  name           String
+  category       String
+  description    String?
+  price          Float
+  cost           Float
+  stockQuantity  Int      @default(0)
+  reorderPoint   Int      @default(0)
+  supplier       String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  inventory      Inventory[]
+  transactions   TransactionItem[]
+
+  @@map("products")
+}
+
+// Inventory management
+model Inventory {
+  id           String   @id @default(cuid())
+  productId    String
+  batchNumber  String?
+  expiryDate   DateTime?
+  quantity     Int
+  unitCost     Float
+  supplier     String?
+  purchaseDate DateTime?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("inventory")
+}
+
+// Transaction management
+model Transaction {
+  id             String        @id @default(cuid())
+  transactionNumber String     @unique
+  customerId     String?
+  bookingId      String?
+  type           TransactionType
+  status         TransactionStatus @default(PENDING)
+  subtotal       Float
+  taxAmount      Float         @default(0)
+  discountAmount Float         @default(0)
+  totalAmount    Float
+  paymentMethod  PaymentMethod?
+  paymentStatus  PaymentStatus @default(PENDING)
+  notes          String?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  booking       Booking?      @relation(fields: [bookingId], references: [id])
+  user          User?         @relation(fields: [userId], references: [id])
+  userId        String?
+  items         TransactionItem[]
+  payments      Payment[]
+
+  @@map("transactions")
+}
+
+enum TransactionType {
+  SALE
+  REFUND
+  VOID
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  VOIDED
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  E_WALLET
+  BANK_TRANSFER
+  FPX
+  DUITNOW
+  TOUCH_N_GO
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+// Transaction items
+model TransactionItem {
+  id            String   @id @default(cuid())
+  transactionId String
+  productId     String?
+  serviceId     String?
+  quantity      Int
+  unitPrice     Float
+  totalPrice    Float
+  discount      Float    @default(0)
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  product       Product?    @relation(fields: [productId], references: [id])
+
+  @@map("transaction_items")
+}
+
+// Payment tracking
+model Payment {
+  id              String   @id @default(cuid())
+  transactionId   String
+  amount          Float
+  paymentMethod   PaymentMethod
+  referenceNumber String?
+  status          PaymentStatus
+  processedAt     DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  transaction     Transaction @relation(fields: [transactionId], references: [id])
+
+  @@map("payments")
+}
+
+// Booking services
+model BookingService {
+  id        String   @id @default(cuid())
+  bookingId String
+  serviceId String
+  price     Float
+  notes     String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  service   Service  @relation(fields: [serviceId], references: [id])
+
+  @@map("booking_services")
+}
+
+// Package management
+model Package {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  validityDays Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  services    PackageService[]
+  customers   CustomerPackage[]
+
+  @@map("packages")
+}
+
+model PackageService {
+  id        String   @id @default(cuid())
+  packageId String
+  serviceId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  // Relations
+  package   Package  @relation(fields: [packageId], references: [id])
+  service   Service  @relation(fields: [serviceId], references: [id])
+
+  @@map("package_services")
+}
+
+model CustomerPackage {
+  id          String   @id @default(cuid())
+  customerId  String
+  packageId   String
+  quantity    Int      @default(1)
+  used        Int      @default(0)
+  expiresAt   DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  customer   Customer @relation(fields: [customerId], references: [id])
+  package    Package  @relation(fields: [packageId], references: [id])
+
+  @@map("customer_packages")
+}
+
+// Loyalty management
+model LoyaltyHistory {
+  id          String   @id @default(cuid())
+  customerId  String
+  points      Int
+  type        LoyaltyActionType
+  description String
+  referenceId String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  customer    Customer @relation(fields: [customerId], references: [id])
+
+  @@map("loyalty_history")
+}
+
+enum LoyaltyActionType {
+  EARNED
+  REDEEMED
+  EXPIRED
+  ADJUSTED
+}
+
+// Staff management
+model Shift {
+  id        String   @id @default(cuid())
+  userId    String
+  startTime DateTime
+  endTime   DateTime?
+  status    ShiftStatus @default(ACTIVE)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("shifts")
+}
+
+enum ShiftStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+// Maintenance management
+model Maintenance {
+  id          String   @id @default(cuid())
+  roomId      String
+  type        MaintenanceType
+  description String
+  startDate   DateTime
+  endDate     DateTime?
+  status      MaintenanceStatus @default(SCHEDULED)
+  cost        Float?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  room        Room     @relation(fields: [roomId], references: [id])
+
+  @@map("maintenance")
+}
+
+enum MaintenanceType {
+  CLEANING
+  REPAIR
+  INSPECTION
+  UPGRADE
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Grooming records
+model GroomingRecord {
+  id          String   @id @default(cuid())
+  petId       String
+  serviceType String
+  groomer     String
+  date        DateTime
+  duration    Int      // in minutes
+  notes       String?
+  beforePhoto String?
+  afterPhoto  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  pet         Pet      @relation(fields: [petId], references: [id])
+
+  @@map("grooming_records")
+}
+
+// Audit logging
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  tableName  String
+  recordId   String?
+  oldValues  String?  // JSON
+  newValues  String?  // JSON
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// Communication templates
+model CommunicationTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  type        CommunicationType
+  subject     String?
+  content     String
+  variables   String[] // JSON array of variable names
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("communication_templates")
+}
+
+enum CommunicationType {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH_NOTIFICATION
+}
+
+// Communication history
+model Communication {
+  id          String   @id @default(cuid())
+  templateId  String?
+  type        CommunicationType
+  recipient   String
+  subject     String?
+  content     String
+  status      CommunicationStatus @default(PENDING)
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  template    CommunicationTemplate? @relation(fields: [templateId], references: [id])
+
+  @@map("communications")
+}
+
+enum CommunicationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+// Settings
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String
+  isEditable  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("settings")
+}

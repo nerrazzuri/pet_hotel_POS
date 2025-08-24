@@ -21,6 +21,18 @@ class AuthService {
   
   AuthService(this._userService, this._auditService);
 
+  /// Verify password for a user (for setup wizard)
+  Future<bool> verifyPassword(String username, String password) async {
+    try {
+      final user = await _userService.getUserByUsername(username);
+      if (user == null) return false;
+      
+      return _verifyPassword(password, user.passwordHash ?? '', user.salt ?? '');
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Authenticate user with username and password
   Future<AuthResult> authenticateUser(String username, String password) async {
     try {

@@ -189,7 +189,8 @@ class HeldCartsDrawer extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              // TODO: Implement delete held cart functionality
+              // Delete held cart functionality
+              ref.read(currentCartProvider.notifier).deleteHeldCart(cartId);
               Navigator.of(context).pop();
               
               ScaffoldMessenger.of(context).showSnackBar(

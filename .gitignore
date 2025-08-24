@@ -32,6 +32,15 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Flutter build outputs
+**/build/
+**/build_runner/
+**/generated/
+**/*.freezed.dart
+**/*.g.dart
+**/*.mocks.dart
+**/*.config.dart
+
 # Symbolication related
 app.*.symbols
 
@@ -159,6 +168,18 @@ temp/
 **/android/**/app/debug
 **/android/**/app/profile
 **/android/**/app/release
+**/android/**/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+**/android/**/app/src/main/kotlin/io/flutter/plugins/GeneratedPluginRegistrant.kt
+**/android/**/app/src/main/kotlin/io/flutter/plugins/GeneratedPluginRegistrant.kt.bak
+
+# Android build directories (exclude all build artifacts)
+**/android/**/build/
+**/android/**/app/build/
+**/android/**/gradle/
+**/android/**/.gradle/
+**/android/**/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+**/android/**/app/src/main/kotlin/io/flutter/plugins/GeneratedPluginRegistrant.kt
+**/android/**/app/src/main/kotlin/io/flutter/plugins/GeneratedPluginRegistrant.kt.bak
 **/android/**/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 **/android/**/app/src/main/kotlin/io/flutter/plugins/GeneratedPluginRegistrant.kt
 **/android/**/app/src/main/kotlin/io/flutter/plugins/GeneratedPluginRegistrant.kt.bak

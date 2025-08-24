@@ -187,6 +187,16 @@ class POSCartNotifier extends StateNotifier<POSCart?> {
     state = updatedCart;
   }
 
+  Future<void> deleteHeldCart(String cartId) async {
+    // Delete the held cart from the DAO
+    await _posDao.deleteCart(cartId);
+    
+    // If the current cart is the one being deleted, clear the state
+    if (state?.id == cartId) {
+      state = null;
+    }
+  }
+
   Future<void> holdCart([String? reason]) async {
     if (state == null) return;
     

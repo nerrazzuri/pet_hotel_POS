@@ -24,6 +24,8 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 			'icon': Icons.hotel,
 			'color': Colors.blue,
 			'petIcon': '🐱',
+			'description': 'Comfortable single room for one pet',
+			'duration': 'Per Night',
 		},
 		{
 			'id': 'boarding_deluxe',
@@ -33,6 +35,8 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 			'icon': Icons.hotel,
 			'color': Colors.green,
 			'petIcon': '🐕',
+			'description': 'Spacious deluxe room with premium amenities',
+			'duration': 'Per Night',
 		},
 		{
 			'id': 'daycare_half',
@@ -42,6 +46,8 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 			'icon': Icons.sunny,
 			'color': Colors.orange,
 			'petIcon': '🐱',
+			'description': '4 hours of supervised play and care',
+			'duration': 'Half Day',
 		},
 		{
 			'id': 'daycare_full',
@@ -51,6 +57,8 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 			'icon': Icons.sunny,
 			'color': Colors.orange,
 			'petIcon': '🐕',
+			'description': '8 hours of supervised play and care',
+			'duration': 'Full Day',
 		},
 		{
 			'id': 'grooming_basic',
@@ -60,6 +68,8 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 			'icon': Icons.content_cut,
 			'color': Colors.teal,
 			'petIcon': '🐕',
+			'description': 'Bath, brush, and basic trim',
+			'duration': 'Per Session',
 		},
 		{
 			'id': 'grooming_premium',
@@ -69,16 +79,20 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 			'icon': Icons.content_cut,
 			'color': Colors.teal,
 			'petIcon': '🐱',
+			'description': 'Full grooming with styling and extras',
+			'duration': 'Per Session',
 		},
 		// Add-on Services
 		{
 			'id': 'addon_extra_playtime',
-			'name': 'Extra Playtime (30 min)',
+			'name': 'Extra Playtime',
 			'category': 'addons',
 			'price': 15.00,
 			'icon': Icons.sports_esports,
 			'color': Colors.purple,
 			'petIcon': '🎾',
+			'description': 'Additional 30 minutes of supervised play',
+			'duration': '30 min',
 		},
 		{
 			'id': 'addon_webcam',
@@ -88,6 +102,8 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 			'icon': Icons.videocam,
 			'color': Colors.indigo,
 			'petIcon': '📹',
+			'description': '24/7 access to pet monitoring camera',
+			'duration': 'Per Day',
 		},
 		{
 			'id': 'addon_meds_admin',
@@ -97,427 +113,392 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 			'icon': Icons.medication,
 			'color': Colors.red,
 			'petIcon': '💊',
+			'description': 'Professional medication administration',
+			'duration': 'Per Dose',
 		},
 		{
 			'id': 'addon_special_diet',
-			'name': 'Special Diet Preparation',
+			'name': 'Special Diet',
 			'category': 'addons',
 			'price': 12.00,
 			'icon': Icons.restaurant,
-			'color': Colors.brown,
+			'color': Colors.amber,
 			'petIcon': '🍽️',
-		},
-		// Retail Products
-		{
-			'id': 'retail_food_premium',
-			'name': 'Premium Pet Food (1kg)',
-			'category': 'retail',
-			'price': 25.00,
-			'icon': Icons.shopping_bag,
-			'color': Colors.amber,
-			'petIcon': '🦴',
+			'description': 'Custom dietary requirements and feeding',
+			'duration': 'Per Day',
 		},
 		{
-			'id': 'retail_treats',
-			'name': 'Pet Treats Pack',
-			'category': 'retail',
-			'price': 8.50,
-			'icon': Icons.shopping_bag,
-			'color': Colors.amber,
-			'petIcon': '🍖',
+			'id': 'addon_extra_walks',
+			'name': 'Extra Walks',
+			'category': 'addons',
+			'price': 18.00,
+			'icon': Icons.directions_walk,
+			'color': Colors.lightGreen,
+			'petIcon': '🚶',
+			'description': 'Additional outdoor exercise and walks',
+			'duration': 'Per Walk',
 		},
 		{
-			'id': 'retail_toys',
-			'name': 'Pet Toys',
-			'category': 'retail',
-			'price': 12.00,
-			'icon': Icons.shopping_bag,
-			'color': Colors.amber,
-			'petIcon': '🧸',
+			'id': 'addon_photo_service',
+			'name': 'Photo Service',
+			'category': 'addons',
+			'price': 20.00,
+			'icon': Icons.camera_alt,
+			'color': Colors.pink,
+			'petIcon': '📸',
+			'description': 'Professional pet photography session',
+			'duration': 'Per Session',
 		},
 	];
 
+	List<String> get _categories => ['All', ..._products.map((p) => p['category']).toSet()];
+
 	List<Map<String, dynamic>> get _filteredProducts {
-		return _products.where((product) {
-			final matchesCategory = _selectedCategory == 'All' || product['category'] == _selectedCategory;
-			final matchesSearch = _searchQuery.isEmpty || 
-				product['name'].toLowerCase().contains(_searchQuery.toLowerCase());
-			return matchesCategory && matchesSearch;
-		}).toList();
-	}
-
-	void _addToCart(Map<String, dynamic> product) {
-		// For boarding services, show duration selector
-		if (product['category'] == 'boarding') {
-			_showBoardingDurationDialog(product);
-		} else {
-			_addItemToCart(product, 1);
-		}
-	}
-
-	void _addItemToCart(Map<String, dynamic> product, int quantity) {
-		final cartItem = CartItem(
-			id: product['id'],
-			name: product['name'],
-			type: product['category'],
-			price: product['price'].toDouble(),
-			quantity: quantity,
-			category: product['category'],
-		);
-
-		ref.read(currentCartProvider.notifier).addItemToCart(cartItem);
-
-		ScaffoldMessenger.of(context).showSnackBar(
-			SnackBar(
-				content: Text('${product['name']} (${quantity} ${product['category'] == 'boarding' ? 'nights' : 'items'}) added to cart'),
-				backgroundColor: Colors.green,
-				duration: const Duration(seconds: 1),
-			),
-		);
-	}
-
-	void _showBoardingDurationDialog(Map<String, dynamic> product) {
-		int nights = 1;
+		List<Map<String, dynamic>> filtered = _products;
 		
-		showDialog(
-			context: context,
-			builder: (context) => StatefulBuilder(
-				builder: (context, setState) {
-					return AlertDialog(
-						title: Text('Select Boarding Duration'),
-						content: Column(
-							mainAxisSize: MainAxisSize.min,
-							children: [
-								Text(
-									product['name'],
-									style: const TextStyle(
-										fontSize: 18,
-										fontWeight: FontWeight.bold,
-									),
-								),
-								const SizedBox(height: 16),
-								Row(
-									mainAxisAlignment: MainAxisAlignment.center,
-									children: [
-										IconButton(
-											onPressed: () {
-												if (nights > 1) {
-													setState(() {
-														nights--;
-													});
-												}
-											},
-											icon: const Icon(Icons.remove_circle_outline),
-											iconSize: 32,
-										),
-										Container(
-											padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-											decoration: BoxDecoration(
-												color: Colors.teal.shade50,
-												borderRadius: BorderRadius.circular(8),
-											),
-											child: Text(
-												'$nights ${nights == 1 ? 'night' : 'nights'}',
-												style: TextStyle(
-													fontSize: 24,
-													fontWeight: FontWeight.bold,
-													color: Colors.teal.shade800,
-												),
-											),
-										),
-										IconButton(
-											onPressed: () {
-												setState(() {
-													nights++;
-												});
-											},
-											icon: const Icon(Icons.add_circle_outline),
-											iconSize: 32,
-											color: Colors.teal,
-										),
-									],
-								),
-								const SizedBox(height: 16),
-								Text(
-									'Total: \$${(product['price'] * nights).toStringAsFixed(2)}',
-									style: const TextStyle(
-										fontSize: 18,
-										fontWeight: FontWeight.bold,
-										color: Colors.green,
-									),
-								),
-							],
-						),
-						actions: [
-							TextButton(
-								onPressed: () => Navigator.pop(context),
-								child: const Text('Cancel'),
-							),
-							ElevatedButton(
-								onPressed: () {
-									Navigator.pop(context);
-									_addItemToCart(product, nights);
-								},
-								style: ElevatedButton.styleFrom(
-									backgroundColor: Colors.teal,
-									foregroundColor: Colors.white,
-								),
-								child: const Text('Add to Cart'),
-							),
-						],
-					);
-				},
-			),
-		);
+		// Filter by category
+		if (_selectedCategory != 'All') {
+			filtered = filtered.where((p) => p['category'] == _selectedCategory).toList();
+		}
+		
+		// Filter by search query
+		if (_searchQuery.isNotEmpty) {
+			filtered = filtered.where((p) => 
+				p['name'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
+				p['description'].toLowerCase().contains(_searchQuery.toLowerCase())
+			).toList();
+		}
+		
+		return filtered;
 	}
 
 	@override
 	Widget build(BuildContext context) {
+		final theme = Theme.of(context);
+		final colorScheme = theme.colorScheme;
+		
 		return Column(
 			children: [
-				// Sticky Category Tabs with Icons
-				Container(
-					padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-					decoration: BoxDecoration(
-						color: Colors.grey[50],
-						border: Border(
-							bottom: BorderSide(color: Colors.grey[300]!, width: 1),
-						),
-					),
-					child: Row(
-						children: [
-							_CategoryChip(
-								label: 'All',
-								icon: Icons.grid_view,
-								isSelected: _selectedCategory == 'All',
-								onTap: () => setState(() => _selectedCategory = 'All'),
-							),
-							const SizedBox(width: 8),
-							_CategoryChip(
-								label: 'Boarding',
-								icon: Icons.hotel,
-								isSelected: _selectedCategory == 'boarding',
-								onTap: () => setState(() => _selectedCategory = 'boarding'),
-							),
-							const SizedBox(width: 8),
-							_CategoryChip(
-								label: 'Daycare',
-								icon: Icons.sunny,
-								isSelected: _selectedCategory == 'daycare',
-								onTap: () => setState(() => _selectedCategory = 'daycare'),
-							),
-							const SizedBox(width: 8),
-							_CategoryChip(
-								label: 'Grooming',
-								icon: Icons.content_cut,
-								isSelected: _selectedCategory == 'grooming',
-								onTap: () => setState(() => _selectedCategory = 'grooming'),
-							),
-						],
-					),
-				),
-
-				// Search Bar
-				Container(
-					padding: const EdgeInsets.all(16),
-					child: TextField(
-						controller: _searchController,
-						onChanged: (value) => setState(() => _searchQuery = value),
-						decoration: InputDecoration(
-							hintText: 'Search services...',
-							prefixIcon: const Icon(Icons.search),
-							border: OutlineInputBorder(
-								borderRadius: BorderRadius.circular(12),
-								borderSide: BorderSide(color: Colors.grey[300]!),
-							),
-							enabledBorder: OutlineInputBorder(
-								borderRadius: BorderRadius.circular(12),
-								borderSide: BorderSide(color: Colors.grey[300]!),
-							),
-							focusedBorder: OutlineInputBorder(
-								borderRadius: BorderRadius.circular(12),
-								borderSide: BorderSide(color: Colors.teal, width: 2),
-							),
-							filled: true,
-							fillColor: Colors.grey[50],
-							contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-						),
-					),
-				),
+				// Enhanced Search and Filter Bar
+				_buildSearchAndFilterBar(theme, colorScheme),
 				
 				// Products Grid
 				Expanded(
-					child: LayoutBuilder(
-						builder: (context, constraints) {
-							final width = constraints.maxWidth;
-							int crossAxisCount = 3;
-							if (width >= 1600) {
-								crossAxisCount = 6;
-							} else if (width >= 1400) {
-								crossAxisCount = 5;
-							} else if (width >= 1000) {
-								crossAxisCount = 4;
-							} else if (width >= 700) {
-								crossAxisCount = 3;
-							} else {
-								crossAxisCount = 2;
-							}
-							return GridView.builder(
-								padding: const EdgeInsets.all(12),
-								gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-									crossAxisCount: crossAxisCount,
-									childAspectRatio: 1.35,
-									crossAxisSpacing: 12,
-									mainAxisSpacing: 12,
-								),
-								itemCount: _filteredProducts.length,
-								itemBuilder: (context, index) {
-									final product = _filteredProducts[index];
-									return _ProductCard(
-										product: product,
-										onTap: () => _addToCart(product),
-									);
-								},
-							);
-						},
-					),
+					child: _filteredProducts.isEmpty
+						? _buildEmptyState(theme, colorScheme)
+						: _buildProductsGrid(theme, colorScheme),
 				),
 			],
 		);
 	}
 
-	@override
-	void dispose() {
-		_searchController.dispose();
-		super.dispose();
-	}
-}
-
-class _CategoryChip extends StatelessWidget {
-	final String label;
-	final IconData icon;
-	final bool isSelected;
-	final VoidCallback onTap;
-
-	const _CategoryChip({
-		required this.label,
-		required this.icon,
-		required this.isSelected,
-		required this.onTap,
-	});
-
-	@override
-	Widget build(BuildContext context) {
-		return GestureDetector(
-			onTap: onTap,
-			child: Container(
-				padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-				decoration: BoxDecoration(
-					color: isSelected ? Colors.teal : Colors.grey[200],
-					borderRadius: BorderRadius.circular(25),
-					boxShadow: isSelected ? [
-						BoxShadow(
-							color: Colors.teal.withOpacity(0.3),
-							blurRadius: 8,
-							offset: const Offset(0, 2),
-						)
-					] : null,
+	Widget _buildSearchAndFilterBar(ThemeData theme, ColorScheme colorScheme) {
+		return Container(
+			padding: const EdgeInsets.all(20),
+			decoration: BoxDecoration(
+				color: colorScheme.surface,
+				borderRadius: const BorderRadius.only(
+					topLeft: Radius.circular(20),
+					topRight: Radius.circular(20),
 				),
-				child: Row(
-					mainAxisSize: MainAxisSize.min,
-					children: [
-						Icon(
-							icon,
-							size: 18,
-							color: isSelected ? Colors.white : Colors.grey[700],
-						),
-						const SizedBox(width: 6),
-						Text(
-							label,
-							style: TextStyle(
-								color: isSelected ? Colors.white : Colors.grey[700],
-								fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-								fontSize: 14,
+			),
+			child: Column(
+				children: [
+					// Search Bar
+					Container(
+						decoration: BoxDecoration(
+							color: colorScheme.surfaceVariant.withOpacity(0.3),
+							borderRadius: BorderRadius.circular(16),
+							border: Border.all(
+								color: colorScheme.outline.withOpacity(0.2),
 							),
 						),
-					],
+						child: TextField(
+							controller: _searchController,
+							onChanged: (value) => setState(() => _searchQuery = value),
+							decoration: InputDecoration(
+								hintText: 'Search services and products...',
+								hintStyle: TextStyle(
+									color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+								),
+								prefixIcon: Icon(
+									Icons.search,
+									color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+								),
+								border: InputBorder.none,
+								contentPadding: const EdgeInsets.symmetric(
+									horizontal: 20,
+									vertical: 16,
+								),
+							),
+						),
+					),
+					
+					const SizedBox(height: 16),
+					
+					// Category Filter Chips
+					SizedBox(
+						height: 40,
+						child: ListView.builder(
+							scrollDirection: Axis.horizontal,
+							itemCount: _categories.length,
+							itemBuilder: (context, index) {
+								final category = _categories[index];
+								final isSelected = _selectedCategory == category;
+								
+								return Container(
+									margin: const EdgeInsets.only(right: 12),
+									child: FilterChip(
+										label: Text(category),
+										selected: isSelected,
+										onSelected: (selected) {
+											setState(() {
+												_selectedCategory = selected ? category : 'All';
+											});
+										},
+										selectedColor: colorScheme.primaryContainer,
+										checkmarkColor: colorScheme.onPrimaryContainer,
+										labelStyle: TextStyle(
+											color: isSelected 
+												? colorScheme.onPrimaryContainer
+												: colorScheme.onSurface,
+											fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+										),
+										backgroundColor: colorScheme.surfaceVariant.withOpacity(0.3),
+										side: BorderSide(
+											color: isSelected 
+												? colorScheme.primary
+												: colorScheme.outline.withOpacity(0.2),
+										),
+										shape: RoundedRectangleBorder(
+											borderRadius: BorderRadius.circular(20),
+										),
+									),
+								);
+							},
+						),
+					),
+				],
+			),
+		);
+	}
+
+	Widget _buildProductsGrid(ThemeData theme, ColorScheme colorScheme) {
+		return GridView.builder(
+			padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+			gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+				crossAxisCount: 4,
+				childAspectRatio: 3.0,
+				crossAxisSpacing: 12,
+				mainAxisSpacing: 12,
+			),
+			itemCount: _filteredProducts.length,
+			itemBuilder: (context, index) {
+				final product = _filteredProducts[index];
+				return _buildProductCard(product, theme, colorScheme);
+			},
+		);
+	}
+
+	Widget _buildProductCard(Map<String, dynamic> product, ThemeData theme, ColorScheme colorScheme) {
+		return Container(
+			decoration: BoxDecoration(
+				color: colorScheme.surface,
+				borderRadius: BorderRadius.circular(20),
+				boxShadow: [
+					BoxShadow(
+						color: colorScheme.shadow.withOpacity(0.1),
+						blurRadius: 15,
+						offset: const Offset(0, 4),
+					),
+				],
+				border: Border.all(
+					color: colorScheme.outline.withOpacity(0.1),
+				),
+			),
+			child: Material(
+				color: Colors.transparent,
+				child: InkWell(
+					onTap: () => _addToCart(product),
+					borderRadius: BorderRadius.circular(20),
+					child: Padding(
+						padding: const EdgeInsets.all(12),
+						child: Row(
+							children: [
+								// Product Icon
+								Container(
+									padding: const EdgeInsets.all(8),
+									decoration: BoxDecoration(
+										color: product['color'].withOpacity(0.1),
+										borderRadius: BorderRadius.circular(8),
+										border: Border.all(
+											color: product['color'].withOpacity(0.3),
+										),
+									),
+									child: Icon(
+										product['icon'],
+										color: product['color'],
+										size: 18,
+									),
+								),
+								
+								const SizedBox(width: 12),
+								
+								// Product Details
+								Expanded(
+									child: Column(
+										crossAxisAlignment: CrossAxisAlignment.start,
+										mainAxisAlignment: MainAxisAlignment.center,
+										children: [
+											// Product Name
+											Text(
+												product['name'],
+												style: theme.textTheme.titleSmall?.copyWith(
+													fontWeight: FontWeight.bold,
+													color: colorScheme.onSurface,
+													fontSize: 13,
+												),
+												maxLines: 1,
+												overflow: TextOverflow.ellipsis,
+											),
+											
+											const SizedBox(height: 2),
+											
+											// Product Description
+											Text(
+												product['description'],
+												style: theme.textTheme.bodySmall?.copyWith(
+													color: colorScheme.onSurfaceVariant,
+													fontSize: 10,
+												),
+												maxLines: 1,
+												overflow: TextOverflow.ellipsis,
+											),
+											
+											const SizedBox(height: 4),
+											
+											// Price and Duration
+											Row(
+												children: [
+													Text(
+														'\$${product['price'].toStringAsFixed(2)}',
+														style: theme.textTheme.titleMedium?.copyWith(
+															fontWeight: FontWeight.bold,
+															color: product['color'],
+															fontSize: 14,
+														),
+													),
+													const SizedBox(width: 8),
+													Container(
+														padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+														decoration: BoxDecoration(
+															color: product['color'].withOpacity(0.1),
+															borderRadius: BorderRadius.circular(4),
+														),
+														child: Text(
+															product['duration'],
+															style: theme.textTheme.bodySmall?.copyWith(
+																color: product['color'],
+																fontSize: 9,
+																fontWeight: FontWeight.w500,
+															),
+														),
+													),
+												],
+											),
+										],
+									),
+								),
+								
+								const SizedBox(width: 8),
+								
+								// Pet Icon
+								Text(
+									product['petIcon'],
+									style: const TextStyle(fontSize: 16),
+								),
+								
+								const SizedBox(width: 8),
+								
+
+							],
+						),
+					),
 				),
 			),
 		);
 	}
-}
 
-class _ProductCard extends StatelessWidget {
-	final Map<String, dynamic> product;
-	final VoidCallback onTap;
-
-	const _ProductCard({
-		required this.product,
-		required this.onTap,
-	});
-
-	@override
-	Widget build(BuildContext context) {
-		return Card(
-			elevation: 2,
-			color: Colors.white,
-			shadowColor: Colors.black.withOpacity(0.08),
-			shape: RoundedRectangleBorder(
-				borderRadius: BorderRadius.circular(14),
-				side: BorderSide(color: Colors.grey[300]!, width: 1),
-			),
-			child: InkWell(
-				onTap: onTap,
-				borderRadius: BorderRadius.circular(14),
-				child: Container(
-					padding: const EdgeInsets.all(12),
-					child: Column(
-						crossAxisAlignment: CrossAxisAlignment.start,
-						children: [
-							// Pet Icon and Service Icon Row
-							Row(
-								mainAxisAlignment: MainAxisAlignment.spaceBetween,
-								children: [
-									Text(
-										product['petIcon'],
-										style: const TextStyle(fontSize: 18),
-									),
-									Icon(
-										product['icon'],
-										size: 18,
-										color: product['color'],
-									),
-								],
-							),
-
-							const SizedBox(height: 10),
-
-							// Service Name
-							Text(
-								product['name'],
-								style: const TextStyle(
-									fontWeight: FontWeight.bold,
-									fontSize: 14,
-									height: 1.2,
-								),
-								maxLines: 2,
-								overflow: TextOverflow.ellipsis,
-							),
-
-							const SizedBox(height: 6),
-
-							// Price
-							Text(
-								'\$${product['price'].toStringAsFixed(2)}',
-								style: TextStyle(
-									color: Colors.grey[700],
-									fontWeight: FontWeight.w600,
-									fontSize: 16,
-								),
-							),
-						],
+	Widget _buildEmptyState(ThemeData theme, ColorScheme colorScheme) {
+		return Center(
+			child: Column(
+				mainAxisAlignment: MainAxisAlignment.center,
+				children: [
+					Container(
+						padding: const EdgeInsets.all(24),
+						decoration: BoxDecoration(
+							color: colorScheme.surfaceVariant.withOpacity(0.3),
+							shape: BoxShape.circle,
+						),
+						child: Icon(
+							Icons.search_off,
+							size: 64,
+							color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+						),
 					),
+					const SizedBox(height: 24),
+					Text(
+						'No products found',
+						style: theme.textTheme.headlineSmall?.copyWith(
+							color: colorScheme.onSurfaceVariant,
+							fontWeight: FontWeight.w600,
+						),
+					),
+					const SizedBox(height: 8),
+					Text(
+						'Try adjusting your search or category filter',
+						style: theme.textTheme.bodyMedium?.copyWith(
+							color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+						),
+						textAlign: TextAlign.center,
+					),
+				],
+			),
+		);
+	}
+
+	  void _addToCart(Map<String, dynamic> product) {
+    ref.read(currentCartProvider.notifier).addItemToCart(
+      CartItem(
+        id: product['id'],
+        name: product['name'],
+        type: product['category'], // Use category as type
+        price: product['price'],
+        quantity: 1,
+        category: product['category'],
+      ),
+    );
+		
+		// Show success feedback
+		ScaffoldMessenger.of(context).showSnackBar(
+			SnackBar(
+				content: Row(
+					children: [
+						Icon(
+							Icons.check_circle,
+							color: Colors.white,
+							size: 20,
+						),
+						const SizedBox(width: 12),
+						Text('${product['name']} added to cart'),
+					],
 				),
+				backgroundColor: Colors.green[600],
+				behavior: SnackBarBehavior.floating,
+				shape: RoundedRectangleBorder(
+					borderRadius: BorderRadius.circular(12),
+				),
+				margin: const EdgeInsets.all(16),
 			),
 		);
 	}

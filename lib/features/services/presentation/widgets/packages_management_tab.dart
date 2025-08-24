@@ -200,7 +200,9 @@ class _PackagesManagementTabState extends ConsumerState<PackagesManagementTab>
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   const SizedBox(height: 8),
-                                  Row(
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
                                     children: [
                                       Chip(
                                         label: Text('${package.validityDays} days'),
@@ -210,7 +212,6 @@ class _PackagesManagementTabState extends ConsumerState<PackagesManagementTab>
                                           fontSize: 12,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
                                       if (package.discountPercentage != null)
                                         Chip(
                                           label: Text('${package.discountPercentage}% off'),
@@ -220,7 +221,6 @@ class _PackagesManagementTabState extends ConsumerState<PackagesManagementTab>
                                             fontSize: 12,
                                           ),
                                         ),
-                                      const SizedBox(width: 8),
                                       if (package.maxUses != null)
                                         Chip(
                                           label: Text('Max: ${package.maxUses}'),

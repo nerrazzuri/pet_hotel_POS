@@ -1,0 +1,286 @@
+Module,Feature Level,Test ID,Test Case,Test Steps,Expected Result,Priority,Status
+Authentication & User Management,Basic,AUTH-001,User Login,"1. Enter valid username/password
+2. Click Login",User successfully logs in and dashboard appears,High,Not Tested
+Authentication & User Management,Basic,AUTH-002,User Logout,"1. Click Logout button
+2. Confirm logout",User returns to login screen,High,Not Tested
+Authentication & User Management,Basic,AUTH-003,Invalid Login,"1. Enter invalid credentials
+2. Click Login",Error message displayed,Medium,Not Tested
+Authentication & User Management,Basic,AUTH-004,Password Validation,"1. Enter weak password
+2. Submit form",Password strength requirements shown,Medium,Not Tested
+Authentication & User Management,Intermediate,AUTH-005,Password Reset,"1. Click ""Forgot Password""
+2. Enter email
+3. Submit",Reset email sent,Medium,Not Tested
+Authentication & User Management,Intermediate,AUTH-006,Session Timeout,"1. Leave app idle for 30 minutes
+2. Try to perform action",Session expired message,Medium,Not Tested
+Authentication & User Management,Intermediate,AUTH-007,Remember Me,"1. Check ""Remember Me""
+2. Logout and login again",Credentials auto-filled,Low,Not Tested
+Authentication & User Management,Advanced,AUTH-008,Biometric Authentication,"1. Enable biometric auth
+2. Use fingerprint/face ID",Biometric login successful,Medium,Not Tested
+Authentication & User Management,Advanced,AUTH-009,Multi-factor Authentication,"1. Enable 2FA
+2. Login with code",2FA verification successful,High,Not Tested
+Authentication & User Management,Advanced,AUTH-010,Audit Trail,"1. Perform various actions
+2. Check audit logs",All actions logged with timestamps,Medium,Not Tested
+Dashboard & Navigation,Basic,DASH-001,Dashboard Load,"1. Login to system
+2. Wait for dashboard",Dashboard displays with all widgets,High,Not Tested
+Dashboard & Navigation,Basic,DASH-002,Module Navigation,"1. Click on module card
+2. Verify navigation",Correct module screen opens,High,Not Tested
+Dashboard & Navigation,Basic,DASH-003,Role-based Access,"1. Login as different user roles
+2. Check module visibility",Only authorized modules visible,High,Not Tested
+Dashboard & Navigation,Basic,DASH-004,Quick Actions,"1. Click quick action buttons
+2. Verify functionality",Quick actions work correctly,Medium,Not Tested
+Dashboard & Navigation,Intermediate,DASH-005,Real-time Statistics,"1. Perform business actions
+2. Check dashboard updates",Statistics update in real-time,Medium,Not Tested
+Dashboard & Navigation,Intermediate,DASH-006,System Status,"1. Check system status indicators
+2. Verify status accuracy",Status reflects actual system state,Medium,Not Tested
+Dashboard & Navigation,Intermediate,DASH-007,Responsive Layout,"1. Resize application window
+2. Check layout adaptation",Layout adapts to different sizes,Low,Not Tested
+Dashboard & Navigation,Advanced,DASH-008,Customizable Dashboard,"1. Drag and drop widgets
+2. Save layout",Layout customization works,Low,Not Tested
+Dashboard & Navigation,Advanced,DASH-009,Performance Metrics,"1. Monitor dashboard load time
+2. Check memory usage",Performance within acceptable limits,Medium,Not Tested
+Dashboard & Navigation,Advanced,DASH-010,Multi-language Support,"1. Change language setting
+2. Verify translations",Interface displays in selected language,Low,Not Tested
+POS System,Basic,POS-001,Create Transaction,"1. Select customer
+2. Add items
+3. Complete sale",Transaction created successfully,High,Not Tested
+POS System,Basic,POS-002,Item Search,"1. Type item name/code
+2. Select from results",Correct item found and added,High,Not Tested
+POS System,Basic,POS-003,Price Calculation,"1. Add multiple items
+2. Check total calculation",Total calculated correctly,High,Not Tested
+POS System,Basic,POS-004,Payment Processing,"1. Select payment method
+2. Process payment",Payment processed successfully,High,Not Tested
+POS System,Intermediate,POS-005,Discounts & Promotions,"1. Apply discount code
+2. Verify discount calculation",Discount applied correctly,Medium,Not Tested
+POS System,Intermediate,POS-006,Tax Calculation,"1. Add taxable items
+2. Check tax calculation",Tax calculated according to rules,Medium,Not Tested
+POS System,Intermediate,POS-007,Receipt Generation,"1. Complete transaction
+2. Generate receipt",Receipt displays correctly,Medium,Not Tested
+POS System,Intermediate,POS-008,Refund Processing,"1. Select transaction
+2. Process refund",Refund processed successfully,Medium,Not Tested
+POS System,Advanced,POS-009,Split Payments,"1. Split payment methods
+2. Process split payment",Split payment successful,Medium,Not Tested
+POS System,Advanced,POS-010,Hold Transactions,"1. Hold current transaction
+2. Retrieve and complete",Transaction held and retrieved,Low,Not Tested
+POS System,Advanced,POS-011,Offline Mode,"1. Disconnect network
+2. Process transactions",Offline transactions work,Medium,Not Tested
+POS System,Advanced,POS-012,Advanced Reporting,"1. Generate sales reports
+2. Export data",Reports generated and exported,Medium,Not Tested
+Customer & Pet Management,Basic,CUST-001,Add Customer,"1. Fill customer form
+2. Submit form",Customer added successfully,High,Not Tested
+Customer & Pet Management,Basic,CUST-002,Add Pet,"1. Select customer
+2. Fill pet form
+3. Submit",Pet added successfully,High,Not Tested
+Customer & Pet Management,Basic,CUST-003,Search Customers,"1. Enter search criteria
+2. View results",Search results displayed,High,Not Tested
+Customer & Pet Management,Basic,CUST-004,View Customer Details,"1. Click on customer
+2. View profile",Customer details displayed,Medium,Not Tested
+Customer & Pet Management,Intermediate,CUST-005,Edit Customer,"1. Select customer
+2. Modify details
+3. Save changes",Customer updated successfully,Medium,Not Tested
+Customer & Pet Management,Intermediate,CUST-006,Pet Vaccination Records,"1. Add vaccination record
+2. Set reminder dates",Vaccination tracked correctly,Medium,Not Tested
+Customer & Pet Management,Intermediate,CUST-007,Customer Notes,"1. Add notes to customer
+2. View note history",Notes saved and displayed,Low,Not Tested
+Customer & Pet Management,Intermediate,CUST-008,Bulk Import,"1. Upload CSV file
+2. Verify import",Multiple customers imported,Medium,Not Tested
+Customer & Pet Management,Advanced,CUST-009,Customer Analytics,"1. View spending patterns
+2. Check visit frequency",Analytics displayed correctly,Medium,Not Tested
+Customer & Pet Management,Advanced,CUST-010,Automated Reminders,"1. Set reminder preferences
+2. Check reminder generation",Reminders generated automatically,Medium,Not Tested
+Customer & Pet Management,Advanced,CUST-011,Customer Segmentation,"1. Create customer segments
+2. Apply filters",Segmentation works correctly,Low,Not Tested
+Customer & Pet Management,Advanced,CUST-012,Integration with POS,"1. Create customer in POS
+2. Verify sync",Customer data synced,High,Not Tested
+Services & Product Management,Basic,SERV-001,Add Service,"1. Fill service form
+2. Submit form",Service added successfully,High,Not Tested
+Services & Product Management,Basic,SERV-002,Add Product,"1. Fill product form
+2. Submit form",Product added successfully,High,Not Tested
+Services & Product Management,Basic,SERV-003,Service Categories,"1. Create category
+2. Assign service to category",Category assignment works,Medium,Not Tested
+Services & Product Management,Basic,SERV-004,Product Inventory,"1. Set initial stock
+2. Check inventory display",Inventory tracked correctly,High,Not Tested
+Services & Product Management,Intermediate,SERV-005,Service Pricing,"1. Set base price
+2. Add pricing tiers",Pricing structure applied,Medium,Not Tested
+Services & Product Management,Intermediate,SERV-006,Product Variants,"1. Create product variant
+2. Set variant prices",Variants managed correctly,Medium,Not Tested
+Services & Product Management,Intermediate,SERV-007,Service Scheduling,"1. Set service duration
+2. Check availability",Scheduling works correctly,Medium,Not Tested
+Services & Product Management,Intermediate,SERV-008,Package Creation,"1. Create service package
+2. Set package price",Package created successfully,Medium,Not Tested
+Services & Product Management,Advanced,SERV-009,Advanced Analytics,"1. View service performance
+2. Check revenue analysis",Analytics displayed correctly,Medium,Not Tested
+Services & Product Management,Advanced,SERV-010,Automated Pricing,"1. Set pricing rules
+2. Check price updates",Pricing updated automatically,Low,Not Tested
+Services & Product Management,Advanced,SERV-011,Service Dependencies,"1. Set service prerequisites
+2. Check dependency validation",Dependencies enforced,Low,Not Tested
+Services & Product Management,Advanced,SERV-012,Integration Testing,"1. Use services in POS
+2. Verify data consistency",Integration works correctly,High,Not Tested
+Inventory Management,Basic,INV-001,Stock Tracking,"1. Add/remove items
+2. Check stock levels",Stock levels accurate,High,Not Tested
+Inventory Management,Basic,INV-002,Low Stock Alerts,"1. Set threshold levels
+2. Trigger alerts",Alerts generated correctly,Medium,Not Tested
+Inventory Management,Basic,INV-003,Stock Movement,"1. Record stock in/out
+2. Check movement history",Movement tracked correctly,High,Not Tested
+Inventory Management,Basic,INV-004,Supplier Management,"1. Add supplier details
+2. Link to products",Supplier linked correctly,Medium,Not Tested
+Inventory Management,Intermediate,INV-005,Purchase Orders,"1. Create PO
+2. Track PO status",PO workflow works,Medium,Not Tested
+Inventory Management,Intermediate,INV-006,Stock Valuation,"1. Set cost prices
+2. Calculate total value",Valuation accurate,Medium,Not Tested
+Inventory Management,Intermediate,INV-007,Batch Operations,"1. Select multiple items
+2. Perform bulk actions",Bulk operations work,Low,Not Tested
+Inventory Management,Intermediate,INV-008,Stock Transfers,"1. Transfer between locations
+2. Update inventory",Transfers processed,Medium,Not Tested
+Inventory Management,Advanced,INV-009,Demand Forecasting,"1. Analyze sales patterns
+2. Generate forecasts",Forecasts generated,Low,Not Tested
+Inventory Management,Advanced,INV-010,Automated Reordering,"1. Set reorder rules
+2. Check auto-PO generation",Auto-reordering works,Medium,Not Tested
+Inventory Management,Advanced,INV-011,Advanced Reporting,"1. Generate inventory reports
+2. Export data",Reports generated,Medium,Not Tested
+Inventory Management,Advanced,INV-012,Integration with POS,"1. Sell items in POS
+2. Check stock updates",Stock updates automatically,High,Not Tested
+Booking & Room Management,Basic,BOOK-001,Create Booking,"1. Select customer/pet
+2. Choose dates
+3. Confirm booking",Booking created successfully,High,Not Tested
+Booking & Room Management,Basic,BOOK-002,Room Assignment,"1. Select room type
+2. Assign to booking",Room assigned correctly,High,Not Tested
+Booking & Room Management,Basic,BOOK-003,Booking Calendar,"1. View calendar
+2. Check availability",Calendar displays correctly,High,Not Tested
+Booking & Room Management,Basic,BOOK-004,Booking Status,"1. Update booking status
+2. Check status changes",Status updates work,Medium,Not Tested
+Booking & Room Management,Intermediate,BOOK-005,Recurring Bookings,"1. Set recurring pattern
+2. Create series",Recurring bookings created,Medium,Not Tested
+Booking & Room Management,Intermediate,BOOK-006,Room Maintenance,"1. Mark room for maintenance
+2. Update availability",Maintenance tracked,Medium,Not Tested
+Booking & Room Management,Intermediate,BOOK-007,Capacity Planning,"1. Check room capacity
+2. Plan pet placement",Capacity planning works,Medium,Not Tested
+Booking & Room Management,Intermediate,BOOK-008,Drag & Drop Calendar,"1. Drag booking to new date
+2. Verify update",Drag & drop works,Medium,Not Tested
+Booking & Room Management,Advanced,BOOK-009,Advanced Scheduling,"1. Set service schedules
+2. Check conflicts",Scheduling works correctly,Medium,Not Tested
+Booking & Room Management,Advanced,BOOK-010,Revenue Management,"1. Set dynamic pricing
+2. Check price optimization",Pricing optimization works,Low,Not Tested
+Booking & Room Management,Advanced,BOOK-011,Integration with Services,"1. Book additional services
+2. Check service scheduling",Service integration works,Medium,Not Tested
+Booking & Room Management,Advanced,BOOK-012,Reporting & Analytics,"1. Generate occupancy reports
+2. Check revenue analysis",Reports generated,Medium,Not Tested
+Financial Operations,Basic,FIN-001,Account Management,"1. Create financial account
+2. Set account type",Account created successfully,High,Not Tested
+Financial Operations,Basic,FIN-002,Transaction Recording,"1. Record income/expense
+2. Categorize transaction",Transaction recorded,High,Not Tested
+Financial Operations,Basic,FIN-003,Basic Budgeting,"1. Set budget limits
+2. Track spending",Budget tracking works,Medium,Not Tested
+Financial Operations,Basic,FIN-004,Financial Reports,"1. Generate basic reports
+2. View financial data",Reports display correctly,Medium,Not Tested
+Financial Operations,Intermediate,FIN-005,Multi-currency Support,"1. Set different currencies
+2. Convert amounts",Currency conversion works,Medium,Not Tested
+Financial Operations,Intermediate,FIN-006,Expense Tracking,"1. Categorize expenses
+2. Set approval workflows",Expense workflow works,Medium,Not Tested
+Financial Operations,Intermediate,FIN-007,Revenue Recognition,"1. Set recognition rules
+2. Track revenue timing",Recognition works correctly,Medium,Not Tested
+Financial Operations,Intermediate,FIN-008,Financial Reconciliation,"1. Reconcile accounts
+2. Check discrepancies",Reconciliation works,Medium,Not Tested
+Financial Operations,Advanced,FIN-009,Advanced Analytics,"1. Generate cash flow analysis
+2. Check profitability metrics",Analytics displayed,Medium,Not Tested
+Financial Operations,Advanced,FIN-010,Tax Management,"1. Set tax rates
+2. Calculate tax liabilities",Tax calculations accurate,Medium,Not Tested
+Financial Operations,Advanced,FIN-011,Financial Forecasting,"1. Generate financial projections
+2. Check forecast accuracy",Forecasting works,Low,Not Tested
+Financial Operations,Advanced,FIN-012,Integration with POS,"1. Sync POS transactions
+2. Check financial updates",Integration works,High,Not Tested
+Staff Management,Basic,STAFF-001,Employee Profiles,"1. Create employee profile
+2. Set basic information",Profile created successfully,High,Not Tested
+Staff Management,Basic,STAFF-002,Shift Scheduling,"1. Create shift schedule
+2. Assign employees",Scheduling works,High,Not Tested
+Staff Management,Basic,STAFF-003,Time Tracking,"1. Clock in/out
+2. Track hours worked",Time tracking accurate,Medium,Not Tested
+Staff Management,Basic,STAFF-004,Basic Permissions,"1. Set user roles
+2. Assign permissions",Permissions work correctly,High,Not Tested
+Staff Management,Intermediate,STAFF-005,Performance Tracking,"1. Set performance metrics
+2. Track employee performance",Performance tracked,Medium,Not Tested
+Staff Management,Intermediate,STAFF-006,Training Management,"1. Create training programs
+2. Track completion",Training management works,Medium,Not Tested
+Staff Management,Intermediate,STAFF-007,Payroll Integration,"1. Set pay rates
+2. Calculate wages",Payroll calculations accurate,Medium,Not Tested
+Staff Management,Intermediate,STAFF-008,Communication Tools,"1. Send notifications
+2. Check delivery status",Communication works,Low,Not Tested
+Staff Management,Advanced,STAFF-009,Advanced Analytics,"1. Generate staff reports
+2. Check productivity metrics",Analytics displayed,Medium,Not Tested
+Staff Management,Advanced,STAFF-010,Workflow Automation,"1. Set approval workflows
+2. Test automation",Workflows work correctly,Low,Not Tested
+Staff Management,Advanced,STAFF-011,Integration with Other Modules,"1. Test staff access to modules
+2. Check permission enforcement",Integration works,High,Not Tested
+Staff Management,Advanced,STAFF-012,Compliance Reporting,"1. Generate compliance reports
+2. Check regulatory requirements",Compliance tracked,Medium,Not Tested
+Reports & Analytics,Basic,REP-001,Basic Reports,"1. Generate sales report
+2. View data",Report displays correctly,High,Not Tested
+Reports & Analytics,Basic,REP-002,Data Export,"1. Export to CSV/Excel
+2. Check file format",Export successful,Medium,Not Tested
+Reports & Analytics,Basic,REP-003,Date Range Selection,"1. Select date range
+2. Filter data",Date filtering works,Medium,Not Tested
+Reports & Analytics,Basic,REP-004,Basic Charts,"1. Generate bar chart
+2. View visualization",Charts display correctly,Medium,Not Tested
+Reports & Analytics,Intermediate,REP-005,Custom Reports,"1. Create custom report
+2. Save template",Custom reports work,Medium,Not Tested
+Reports & Analytics,Intermediate,REP-006,Scheduled Reports,"1. Set report schedule
+2. Check automation",Scheduling works,Low,Not Tested
+Reports & Analytics,Intermediate,REP-007,Data Filtering,"1. Apply multiple filters
+2. Check results",Filtering works correctly,Medium,Not Tested
+Reports & Analytics,Intermediate,REP-008,Report Sharing,"1. Share report
+2. Check access permissions",Sharing works,Low,Not Tested
+Reports & Analytics,Advanced,REP-009,Advanced Analytics,"1. Generate predictive models
+2. Check accuracy",Analytics work correctly,Low,Not Tested
+Reports & Analytics,Advanced,REP-010,Real-time Dashboards,"1. Create live dashboard
+2. Check updates",Real-time updates work,Medium,Not Tested
+Reports & Analytics,Advanced,REP-011,Data Integration,"1. Connect external data sources
+2. Check data sync",Integration works,Low,Not Tested
+Reports & Analytics,Advanced,REP-012,Performance Optimization,"1. Test report generation speed
+2. Check resource usage",Performance acceptable,Medium,Not Tested
+Settings & Configuration,Basic,SET-001,Business Settings,"1. Set business information
+2. Save settings",Settings saved,High,Not Tested
+Settings & Configuration,Basic,SET-002,User Preferences,"1. Set user preferences
+2. Check persistence",Preferences saved,Medium,Not Tested
+Settings & Configuration,Basic,SET-003,System Configuration,"1. Configure system settings
+2. Apply changes",Configuration applied,High,Not Tested
+Settings & Configuration,Basic,SET-004,Backup Settings,"1. Set backup schedule
+2. Check automation",Backup configured,Medium,Not Tested
+Settings & Configuration,Intermediate,SET-005,Feature Toggles,"1. Enable/disable features
+2. Check functionality",Toggles work correctly,Medium,Not Tested
+Settings & Configuration,Intermediate,SET-006,Permission Management,"1. Set role permissions
+2. Test access control",Permissions enforced,High,Not Tested
+Settings & Configuration,Intermediate,SET-007,Integration Settings,"1. Configure integrations
+2. Test connections",Integrations work,Medium,Not Tested
+Settings & Configuration,Intermediate,SET-008,Notification Settings,"1. Set notification preferences
+2. Test delivery",Notifications work,Low,Not Tested
+Settings & Configuration,Advanced,SET-009,Advanced Security,"1. Configure security policies
+2. Test enforcement",Security policies work,High,Not Tested
+Settings & Configuration,Advanced,SET-010,System Monitoring,"1. Set monitoring alerts
+2. Check notifications",Monitoring works,Medium,Not Tested
+Settings & Configuration,Advanced,SET-011,API Configuration,"1. Configure API endpoints
+2. Test connectivity",API configuration works,Low,Not Tested
+Settings & Configuration,Advanced,SET-012,Disaster Recovery,"1. Test backup restoration
+2. Check data integrity",Recovery works,Medium,Not Tested
+Setup Wizard,Basic,WIZ-001,Wizard Launch,"1. Access setup wizard
+2. Verify password prompt",Wizard launches with security,High,Not Tested
+Setup Wizard,Basic,WIZ-002,Business Setup,"1. Enter business details
+2. Complete setup",Business setup completed,High,Not Tested
+Setup Wizard,Basic,WIZ-003,Feature Selection,"1. Select available features
+2. Save preferences",Feature selection works,High,Not Tested
+Setup Wizard,Basic,WIZ-004,User Creation,"1. Create admin user
+2. Set permissions",Admin user created,High,Not Tested
+Setup Wizard,Intermediate,WIZ-005,Role Configuration,"1. Define user roles
+2. Set permissions",Role configuration works,Medium,Not Tested
+Setup Wizard,Intermediate,WIZ-006,Module Configuration,"1. Configure module settings
+2. Test functionality",Module configuration works,Medium,Not Tested
+Setup Wizard,Intermediate,WIZ-007,Data Import,"1. Import initial data
+2. Verify import",Data import successful,Medium,Not Tested
+Setup Wizard,Intermediate,WIZ-008,Integration Setup,"1. Configure integrations
+2. Test connections",Integrations configured,Medium,Not Tested
+Setup Wizard,Advanced,WIZ-009,Advanced Security,"1. Configure security policies
+2. Test enforcement",Security policies work,High,Not Tested
+Setup Wizard,Advanced,WIZ-010,Customization Options,"1. Set custom preferences
+2. Save configurations",Customization works,Low,Not Tested
+Setup Wizard,Advanced,WIZ-011,Wizard Re-entry,"1. Re-enter wizard
+2. Modify settings",Re-entry works correctly,Medium,Not Tested
+Setup Wizard,Advanced,WIZ-012,Validation & Error Handling,"1. Enter invalid data
+2. Check error messages",Validation works correctly,Medium,Not Tested

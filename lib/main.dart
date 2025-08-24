@@ -8,22 +8,64 @@ import 'package:cat_hotel_pos/core/app_config.dart';
 import 'package:cat_hotel_pos/features/auth/presentation/screens/login_screen.dart';
 import 'package:cat_hotel_pos/features/auth/domain/services/secure_storage_service.dart';
 import 'package:cat_hotel_pos/features/services/domain/services/services_data_seeder.dart';
+import 'package:cat_hotel_pos/features/customers/domain/services/customer_data_seeder.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cat_hotel_pos/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:cat_hotel_pos/features/pos/presentation/screens/pos_screen.dart';
+import 'package:cat_hotel_pos/features/staff/presentation/screens/staff_management_screen.dart';
+import 'package:cat_hotel_pos/features/settings/presentation/screens/settings_screen.dart';
+import 'package:cat_hotel_pos/features/financials/presentation/screens/financial_operations_screen.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/screens/customer_pet_profiles_screen.dart';
+import 'package:cat_hotel_pos/features/loyalty/presentation/screens/loyalty_management_screen.dart';
+import 'package:cat_hotel_pos/features/crm/presentation/screens/crm_management_screen.dart';
+import 'package:cat_hotel_pos/features/booking/presentation/screens/booking_screen.dart';
+import 'package:cat_hotel_pos/features/booking/presentation/screens/room_management_screen.dart';
+import 'package:cat_hotel_pos/features/inventory/presentation/screens/inventory_screen.dart';
+import 'package:cat_hotel_pos/features/reports/presentation/screens/reports_screen.dart';
+import 'package:cat_hotel_pos/features/payments/presentation/screens/payments_screen.dart';
+import 'package:cat_hotel_pos/features/services/presentation/screens/services_screen.dart';
+import 'package:cat_hotel_pos/features/setup_wizard/presentation/screens/setup_wizard_screen.dart';
+import 'package:cat_hotel_pos/core/widgets/custom_window_demo.dart';
+
+// Import window manager for custom window frame
+import 'package:window_manager/window_manager.dart';
+import 'package:cat_hotel_pos/core/widgets/custom_window_frame.dart';
+import 'package:cat_hotel_pos/core/widgets/global_app_wrapper.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Initialize window manager for desktop platforms
+  if (!kIsWeb) {
+    try {
+      await windowManager.ensureInitialized();
+      
+      // Configure basic window properties
+      WindowOptions windowOptions = const WindowOptions(
+        size: Size(1200, 800),
+        center: true,
+        minimumSize: Size(800, 600),
+        titleBarStyle: TitleBarStyle.hidden, // Hide default title bar
+      );
+      
+      await windowManager.waitUntilReadyToShow(windowOptions, () async {
+        await windowManager.show();
+        await windowManager.focus();
+      });
+      
+      print('Window manager initialized successfully');
+    } catch (e) {
+      print('Error initializing window manager: $e');
+    }
+  }
+  
   print('main() called');
   print('kIsWeb: $kIsWeb');
-  
-  // Initialize Hive
-  // await Hive.initFlutter();
-  // print('Hive initialized');
   
   // Initialize services
   if (kIsWeb) {
     print('Web platform detected, initializing web storage...');
-    // Initialize web storage for web platforms
     try {
       await WebStorageService.initialize();
       print('WebStorageService.initialize() completed successfully');
@@ -40,6 +82,10 @@ void main() async {
       await ServicesDataSeeder.seedAllData();
       print('Services & Products data seeding completed');
       
+      print('Seeding Customer & Pet data...');
+      await CustomerDataSeeder.seedAllData();
+      print('Customer & Pet data seeding completed');
+      
       print('Web storage initialized and seeded');
     } catch (e) {
       print('Error initializing web storage: $e');
@@ -47,14 +93,18 @@ void main() async {
     }
   } else {
     print('Desktop platform detected, initializing database...');
-    // Initialize database for desktop platforms
-    // await DatabaseService.initialize();
     print('DatabaseService initialized');
     
-    // Seed database with sample data
     try {
-      // await DatabaseService.seedSampleData();
       print('Sample data seeded successfully');
+      
+      print('Seeding Services & Products data for desktop...');
+      await ServicesDataSeeder.seedAllData();
+      print('Services & Products data seeding completed for desktop');
+      
+      print('Seeding Customer & Pet data for desktop...');
+      await CustomerDataSeeder.seedAllData();
+      print('Customer & Pet data seeding completed for desktop');
     } catch (e) {
       print('Error seeding sample data: $e');
     }
@@ -68,9 +118,6 @@ void main() async {
     print('Error initializing secure storage: $e');
   }
   
-  // await NotificationService.initialize();
-  // print('NotificationService initialized');
-  
   await AppConfig.initialize();
   print('AppConfig initialized');
   
@@ -83,7 +130,7 @@ class CatHotelPOSApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final app = MaterialApp(
       title: 'Cat Hotel POS',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -95,7 +142,57 @@ class CatHotelPOSApp extends StatelessWidget {
         fontFamily: 'Roboto',
       ),
       themeMode: ThemeMode.system,
-      home: const LoginScreen(),
+      home: GlobalAppHelpers.wrapLoginScreen(const LoginScreen()),
+      routes: {
+        '/dashboard': (context) => GlobalAppHelpers.wrapDashboardScreen(const DashboardScreen()),
+        '/pos': (context) => GlobalAppHelpers.wrapPOSScreen(const POSScreen()),
+        '/staff': (context) => GlobalAppHelpers.wrapScreen(
+          child: const StaffManagementScreen(),
+          title: 'Staff Management',
+          titleBarColor: Colors.indigo[700],
+        ),
+        '/settings': (context) => GlobalAppHelpers.wrapSettingsScreen(const SettingsScreen()),
+        '/financials': (context) => GlobalAppHelpers.wrapFinancialScreen(const FinancialOperationsScreen()),
+        '/customers': (context) => GlobalAppHelpers.wrapCustomerScreen(const CustomerPetProfilesScreen()),
+        '/loyalty': (context) => GlobalAppHelpers.wrapScreen(
+          child: const LoyaltyManagementScreen(),
+          title: 'Loyalty Program',
+          titleBarColor: Colors.pink[700],
+        ),
+        '/crm': (context) => GlobalAppHelpers.wrapScreen(
+          child: const CrmManagementScreen(),
+          title: 'CRM Management',
+          titleBarColor: Colors.green[700],
+        ),
+        '/booking': (context) => GlobalAppHelpers.wrapBookingScreen(const BookingScreen()),
+        '/rooms': (context) => GlobalAppHelpers.wrapScreen(
+          child: const RoomManagementScreen(),
+          title: 'Room Management',
+          titleBarColor: Colors.red[700],
+        ),
+        '/inventory': (context) => GlobalAppHelpers.wrapInventoryScreen(const InventoryScreen()),
+        '/reports': (context) => GlobalAppHelpers.wrapReportsScreen(const ReportsScreen()),
+        '/payments': (context) => GlobalAppHelpers.wrapScreen(
+          child: const PaymentsScreen(),
+          title: 'Payment Processing',
+          titleBarColor: Colors.blue[700],
+        ),
+        '/services': (context) => GlobalAppHelpers.wrapServicesScreen(const ServicesScreen()),
+        '/setup-wizard': (context) => GlobalAppHelpers.wrapScreen(
+          child: const SetupWizardScreen(),
+          title: 'Setup Wizard',
+          titleBarColor: Colors.grey[700],
+        ),
+        '/custom-window-demo': (context) => GlobalAppHelpers.wrapScreen(
+          child: const CustomWindowDemo(),
+          title: 'Custom Window Demo',
+          titleBarColor: Colors.purple[700],
+        ),
+      },
     );
+
+    // For desktop platforms, return the app directly
+    // Custom window frame will be implemented differently
+    return app;
   }
 }

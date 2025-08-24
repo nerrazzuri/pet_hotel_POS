@@ -1,0 +1,204 @@
+Role,Module,Test ID,Test Case,Test Steps,Expected Result,Priority,Status
+Staff,Authentication,ROLE-STAFF-001,Staff Login,1. Login with staff credentials
+2. Verify dashboard access,Staff can login and see limited dashboard,High,Not Tested
+Staff,Authentication,ROLE-STAFF-002,Staff Logout,1. Click logout
+2. Verify return to login,Staff successfully logs out,High,Not Tested
+Staff,Dashboard,ROLE-STAFF-003,Module Visibility,1. Check available module cards
+2. Verify only authorized modules shown,Only POS, Customer Management, and basic modules visible,High,Not Tested
+Staff,Dashboard,ROLE-STAFF-004,Quick Actions Access,1. Check quick action buttons
+2. Verify staff-appropriate actions,Only staff-appropriate quick actions visible,Medium,Not Tested
+Staff,POS System,ROLE-STAFF-005,Create Transaction,1. Select customer
+2. Add items
+3. Complete sale,Transaction created successfully,High,Not Tested
+Staff,POS System,ROLE-STAFF-006,Basic Refund,1. Select transaction
+2. Process basic refund,Basic refund processed,Medium,Not Tested
+Staff,POS System,ROLE-STAFF-007,View Sales History,1. Access sales history
+2. Check limited view,Can view own transactions only,Medium,Not Tested
+Staff,Customer Management,ROLE-STAFF-008,View Customer Details,1. Search for customer
+2. View basic information,Can view customer details,Medium,Not Tested
+Staff,Customer Management,ROLE-STAFF-009,Add Basic Customer Info,1. Fill customer form
+2. Submit basic information,Basic customer info added,Medium,Not Tested
+Staff,Customer Management,ROLE-STAFF-010,View Pet Information,1. Select customer
+2. View pet details,Can view pet information,Medium,Not Tested
+Staff,Services,ROLE-STAFF-011,View Service Catalog,1. Access services tab
+2. Check available services,Can view service catalog,Medium,Not Tested
+Staff,Services,ROLE-STAFF-012,Basic Service Booking,1. Select service
+2. Book for customer,Basic service booking works,Medium,Not Tested
+Staff,Inventory,ROLE-STAFF-013,Check Stock Levels,1. Search for product
+2. View current stock,Can check stock levels,Medium,Not Tested
+Staff,Inventory,ROLE-STAFF-014,Basic Stock Movement,1. Record stock out
+2. Verify movement logged,Basic stock movement recorded,Medium,Not Tested
+Staff,Reports,ROLE-STAFF-015,Basic Sales Report,1. Generate basic report
+2. Check data access,Can view basic sales reports,Low,Not Tested
+Staff,Settings,ROLE-STAFF-016,Personal Preferences,1. Access settings
+2. Modify personal preferences,Can modify personal settings only,Low,Not Tested
+Manager,Authentication,ROLE-MGR-001,Manager Login,1. Login with manager credentials
+2. Verify dashboard access,Manager can login and see expanded dashboard,High,Not Tested
+Manager,Authentication,ROLE-MGR-002,Manager Logout,1. Click logout
+2. Verify return to login,Manager successfully logs out,High,Not Tested
+Manager,Dashboard,ROLE-MGR-003,Module Visibility,1. Check available module cards
+2. Verify manager-accessible modules,POS, Customer Management, Services, Inventory, Reports visible,High,Not Tested
+Manager,Dashboard,ROLE-MGR-004,Quick Actions Access,1. Check quick action buttons
+2. Verify manager-appropriate actions,Manager-level quick actions visible,Medium,Not Tested
+Manager,POS System,ROLE-MGR-005,Advanced POS Operations,1. Access advanced POS features
+2. Test manager capabilities,Advanced POS features accessible,High,Not Tested
+Manager,POS System,ROLE-MGR-006,Complex Refunds,1. Process complex refunds
+2. Verify approval workflow,Complex refunds processed,Medium,Not Tested
+Manager,POS System,ROLE-MGR-007,View All Sales,1. Access sales history
+2. Check comprehensive view,Can view all staff transactions,Medium,Not Tested
+Manager,Customer Management,ROLE-MGR-008,Full Customer Access,1. Access customer management
+2. Test all customer features,Full customer management access,High,Not Tested
+Manager,Customer Management,ROLE-MGR-009,Edit Customer Information,1. Select customer
+2. Modify customer details,Can edit customer information,Medium,Not Tested
+Manager,Customer Management,ROLE-MGR-010,Pet Management,1. Access pet management
+2. Test pet operations,Full pet management access,Medium,Not Tested
+Manager,Services,ROLE-MGR-011,Service Management,1. Access service management
+2. Test service operations,Full service management access,High,Not Tested
+Manager,Services,ROLE-MGR-012,Service Pricing,1. Modify service prices
+2. Verify price changes,Can modify service pricing,Medium,Not Tested
+Manager,Inventory,ROLE-MGR-013,Inventory Management,1. Access inventory management
+2. Test inventory operations,Full inventory management access,High,Not Tested
+Manager,Inventory,ROLE-MGR-014,Stock Adjustments,1. Make stock adjustments
+2. Verify adjustments logged,Can make stock adjustments,Medium,Not Tested
+Manager,Inventory,ROLE-MGR-015,Purchase Orders,1. Create purchase order
+2. Track PO status,Can manage purchase orders,Medium,Not Tested
+Manager,Reports,ROLE-MGR-016,Comprehensive Reports,1. Access all reports
+2. Test report generation,Full reporting access,Medium,Not Tested
+Manager,Reports,ROLE-MGR-017,Data Export,1. Export report data
+2. Verify export functionality,Can export report data,Medium,Not Tested
+Manager,Staff Management,ROLE-MGR-018,View Staff Information,1. Access staff management
+2. View staff details,Can view staff information,Medium,Not Tested
+Manager,Staff Management,ROLE-MGR-019,Basic Staff Operations,1. Check staff schedules
+2. View basic staff data,Basic staff operations accessible,Medium,Not Tested
+Manager,Settings,ROLE-MGR-020,Manager Settings,1. Access manager settings
+2. Modify relevant settings,Can modify manager-level settings,Medium,Not Tested
+Owner,Authentication,ROLE-OWNER-001,Owner Login,1. Login with owner credentials
+2. Verify full dashboard access,Owner can login and see complete dashboard,High,Not Tested
+Owner,Authentication,ROLE-OWNER-002,Owner Logout,1. Click logout
+2. Verify return to login,Owner successfully logs out,High,Not Tested
+Owner,Dashboard,ROLE-OWNER-003,Full Module Access,1. Check all module cards
+2. Verify complete access,All modules visible and accessible,High,Not Tested
+Owner,Dashboard,ROLE-OWNER-004,All Quick Actions,1. Check all quick action buttons
+2. Verify owner-level actions,All quick actions accessible,High,Not Tested
+Owner,POS System,ROLE-OWNER-005,Complete POS Access,1. Access all POS features
+2. Test owner capabilities,Complete POS system access,High,Not Tested
+Owner,POS System,ROLE-OWNER-006,System Configuration,1. Access POS settings
+2. Modify system parameters,Can configure POS system,High,Not Tested
+Owner,Customer Management,ROLE-OWNER-007,Full Customer Control,1. Access all customer features
+2. Test complete functionality,Complete customer management control,High,Not Tested
+Owner,Customer Management,ROLE-OWNER-008,Data Import/Export,1. Import customer data
+2. Export customer reports,Can import/export customer data,Medium,Not Tested
+Owner,Services,ROLE-OWNER-009,Complete Service Control,1. Access all service features
+2. Test complete functionality,Complete service management control,High,Not Tested
+Owner,Services,ROLE-OWNER-010,Service Analytics,1. Access service analytics
+2. View performance metrics,Can access service analytics,Medium,Not Tested
+Owner,Inventory,ROLE-OWNER-011,Complete Inventory Control,1. Access all inventory features
+2. Test complete functionality,Complete inventory management control,High,Not Tested
+Owner,Inventory,ROLE-OWNER-012,Advanced Inventory Features,1. Access advanced features
+2. Test sophisticated operations,Advanced inventory features accessible,Medium,Not Tested
+Owner,Financial Operations,ROLE-OWNER-013,Financial Management,1. Access financial operations
+2. Test financial features,Complete financial management access,High,Not Tested
+Owner,Financial Operations,ROLE-OWNER-014,Financial Reports,1. Generate financial reports
+2. Access financial analytics,Complete financial reporting access,High,Not Tested
+Owner,Staff Management,ROLE-OWNER-015,Complete Staff Control,1. Access all staff features
+2. Test complete functionality,Complete staff management control,High,Not Tested
+Owner,Staff Management,ROLE-OWNER-016,Staff Permissions,1. Modify staff permissions
+2. Set role access levels,Can modify staff permissions,High,Not Tested
+Owner,Reports & Analytics,ROLE-OWNER-017,Complete Reporting,1. Access all reports
+2. Test complete functionality,Complete reporting and analytics access,High,Not Tested
+Owner,Reports & Analytics,ROLE-OWNER-018,Advanced Analytics,1. Access advanced analytics
+2. Test sophisticated features,Advanced analytics accessible,Medium,Not Tested
+Owner,Settings & Configuration,ROLE-OWNER-019,Complete System Control,1. Access all settings
+2. Test complete functionality,Complete system configuration control,High,Not Tested
+Owner,Settings & Configuration,ROLE-OWNER-020,Security Settings,1. Access security settings
+2. Modify security policies,Can modify security settings,High,Not Tested
+Owner,Setup Wizard,ROLE-OWNER-021,Setup Wizard Access,1. Access setup wizard
+2. Modify system configuration,Can access and modify setup wizard,High,Not Tested
+Admin,Authentication,ROLE-ADMIN-001,Admin Login,1. Login with admin credentials
+2. Verify full system access,Admin can login and see complete system,High,Not Tested
+Admin,Authentication,ROLE-ADMIN-002,Admin Logout,1. Click logout
+2. Verify return to login,Admin successfully logs out,High,Not Tested
+Admin,Dashboard,ROLE-ADMIN-003,Complete Module Access,1. Check all module cards
+2. Verify complete access,All modules visible and accessible,High,Not Tested
+Admin,Dashboard,ROLE-ADMIN-004,All Quick Actions,1. Check all quick action buttons
+2. Verify admin-level actions,All quick actions accessible,High,Not Tested
+Admin,POS System,ROLE-ADMIN-005,Complete POS Access,1. Access all POS features
+2. Test admin capabilities,Complete POS system access,High,Not Tested
+Admin,POS System,ROLE-ADMIN-006,System Administration,1. Access POS administration
+2. Modify system settings,Can administer POS system,High,Not Tested
+Admin,Customer Management,ROLE-ADMIN-007,Complete Customer Control,1. Access all customer features
+2. Test complete functionality,Complete customer management control,High,Not Tested
+Admin,Customer Management,ROLE-ADMIN-008,System Data Management,1. Manage customer data
+2. Control data operations,Complete customer data control,High,Not Tested
+Admin,Services,ROLE-ADMIN-009,Complete Service Control,1. Access all service features
+2. Test complete functionality,Complete service management control,High,Not Tested
+Admin,Services,ROLE-ADMIN-010,Service System Admin,1. Access service administration
+2. Control service system,Complete service system control,High,Not Tested
+Admin,Inventory,ROLE-ADMIN-011,Complete Inventory Control,1. Access all inventory features
+2. Test complete functionality,Complete inventory management control,High,Not Tested
+Admin,Inventory,ROLE-ADMIN-012,Inventory System Admin,1. Access inventory administration
+2. Control inventory system,Complete inventory system control,High,Not Tested
+Admin,Financial Operations,ROLE-ADMIN-013,Complete Financial Control,1. Access all financial features
+2. Test complete functionality,Complete financial management control,High,Not Tested
+Admin,Financial Operations,ROLE-ADMIN-014,Financial System Admin,1. Access financial administration
+2. Control financial system,Complete financial system control,High,Not Tested
+Admin,Staff Management,ROLE-ADMIN-015,Complete Staff Control,1. Access all staff features
+2. Test complete functionality,Complete staff management control,High,Not Tested
+Admin,Staff Management,ROLE-ADMIN-016,System User Management,1. Manage system users
+2. Control user access,Complete user management control,High,Not Tested
+Admin,Reports & Analytics,ROLE-ADMIN-017,Complete Reporting Control,1. Access all reports
+2. Test complete functionality,Complete reporting and analytics control,High,Not Tested
+Admin,Reports & Analytics,ROLE-ADMIN-018,System Analytics,1. Access system analytics
+2. Control analytics system,Complete analytics system control,High,Not Tested
+Admin,Settings & Configuration,ROLE-ADMIN-019,Complete System Control,1. Access all settings
+2. Test complete functionality,Complete system configuration control,High,Not Tested
+Admin,Settings & Configuration,ROLE-ADMIN-020,System Administration,1. Access system administration
+2. Control system settings,Complete system administration control,High,Not Tested
+Admin,Setup Wizard,ROLE-ADMIN-021,Complete Setup Control,1. Access setup wizard
+2. Control system setup,Complete setup wizard control,High,Not Tested
+Admin,Security,ROLE-ADMIN-022,Security Administration,1. Access security settings
+2. Control security policies,Complete security control,High,Not Tested
+Admin,Backup & Recovery,ROLE-ADMIN-023,Backup Management,1. Access backup settings
+2. Control backup operations,Complete backup management control,High,Not Tested
+Admin,System Monitoring,ROLE-ADMIN-024,System Monitoring,1. Access system monitoring
+2. Control monitoring settings,Complete system monitoring control,Medium,Not Tested
+Cross-Role,Authentication,CROSS-001,Role Switching,1. Login as different roles
+2. Verify appropriate access,Each role sees appropriate modules,High,Not Tested
+Cross-Role,Authentication,CROSS-002,Permission Enforcement,1. Try to access unauthorized features
+2. Verify access denied,Unauthorized access properly blocked,High,Not Tested
+Cross-Role,Authentication,CROSS-003,Session Management,1. Test session handling
+2. Verify role persistence,Role permissions persist during session,Medium,Not Tested
+Cross-Role,Data Access,CROSS-004,Data Isolation,1. Access data as different roles
+2. Verify appropriate data visibility,Data access properly restricted by role,High,Not Tested
+Cross-Role,Data Access,CROSS-005,Data Modification Rights,1. Try to modify data as different roles
+2. Verify appropriate permissions,Data modification properly restricted,High,Not Tested
+Cross-Role,UI Elements,CROSS-006,Interface Adaptation,1. Check UI elements for each role
+2. Verify appropriate interface,UI adapts to user role,Medium,Not Tested
+Cross-Role,UI Elements,CROSS-007,Menu Visibility,1. Check menu items for each role
+2. Verify appropriate menus,Menus show appropriate options,Medium,Not Tested
+Cross-Role,Functionality,CROSS-008,Feature Access,1. Test feature access for each role
+2. Verify appropriate functionality,Features accessible based on role,High,Not Tested
+Cross-Role,Functionality,CROSS-009,Operation Permissions,1. Test operations for each role
+2. Verify appropriate permissions,Operations allowed based on role,High,Not Tested
+Cross-Role,Integration,CROSS-010,Module Integration,1. Test module access for each role
+2. Verify appropriate integration,Module integration works per role,Medium,Not Tested
+Cross-Role,Integration,CROSS-011,Data Flow,1. Test data flow between modules
+2. Verify appropriate data access,Data flow respects role permissions,Medium,Not Tested
+Cross-Role,Audit,CROSS-012,Action Logging,1. Perform actions as different roles
+2. Check audit logs,All actions properly logged with role info,Medium,Not Tested
+Cross-Role,Audit,CROSS-013,Access Logging,1. Access features as different roles
+2. Check access logs,All access attempts properly logged,Medium,Not Tested
+Cross-Role,Error Handling,CROSS-014,Unauthorized Access Errors,1. Try unauthorized access
+2. Verify appropriate error messages,Proper error messages for unauthorized access,Medium,Not Tested
+Cross-Role,Error Handling,CROSS-015,Permission Denied Handling,1. Try restricted operations
+2. Verify appropriate handling,Restricted operations properly handled,Medium,Not Tested
+Cross-Role,Performance,CROSS-016,Role-based Performance,1. Test performance for each role
+2. Verify appropriate performance,Performance appropriate for role complexity,Low,Not Tested
+Cross-Role,Performance,CROSS-017,Load Handling,1. Test system under different role loads
+2. Verify system stability,System handles multiple roles efficiently,Low,Not Tested
+Cross-Role,Security,CROSS-018,Role Escalation Prevention,1. Try to escalate privileges
+2. Verify prevention,Role escalation properly prevented,High,Not Tested
+Cross-Role,Security,CROSS-019,Cross-role Data Access,1. Try to access data from other roles
+2. Verify access denied,Cross-role data access properly blocked,High,Not Tested
+Cross-Role,Security,CROSS-020,Session Security,1. Test session security for each role
+2. Verify proper security,Session security appropriate for role,Medium,Not Tested

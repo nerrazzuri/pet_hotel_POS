@@ -99,24 +99,27 @@ class _InventoryReportsTabState extends ConsumerState<InventoryReportsTab> {
   Widget _buildReportTypeSelector() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Report Type',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
-              spacing: 12,
+              spacing: 8,
               children: [
                 _buildReportTypeChip('overview', 'Overview', Icons.dashboard),
-                _buildReportTypeChip('stock', 'Stock Status', Icons.inventory),
-                _buildReportTypeChip('transactions', 'Transactions', Icons.receipt_long),
-                _buildReportTypeChip('valuation', 'Valuation', Icons.attach_money),
-                _buildReportTypeChip('movement', 'Stock Movement', Icons.trending_up),
+                _buildReportTypeChip('stock_levels', 'Stock Levels', Icons.inventory),
+                _buildReportTypeChip('movements', 'Stock Movements', Icons.swap_horiz),
+                _buildReportTypeChip('valuation', 'Inventory Valuation', Icons.attach_money),
                 _buildReportTypeChip('supplier', 'Supplier Analysis', Icons.business),
+                _buildReportTypeChip('forecasting', 'Demand Forecasting', Icons.trending_up),
               ],
             ),
           ],
@@ -138,11 +141,12 @@ class _InventoryReportsTabState extends ConsumerState<InventoryReportsTab> {
       ),
       selected: isSelected,
       onSelected: (selected) {
-        setState(() => _selectedReportType = value);
+        setState(() {
+          _selectedReportType = value;
+        });
       },
-      backgroundColor: Colors.grey[100],
-      selectedColor: Colors.blue[100],
-      checkmarkColor: Colors.blue[600],
+      selectedColor: Colors.teal[100],
+      checkmarkColor: Colors.teal[800],
     );
   }
 
@@ -256,16 +260,16 @@ class _InventoryReportsTabState extends ConsumerState<InventoryReportsTab> {
     switch (_selectedReportType) {
       case 'overview':
         return _buildOverviewReport(analyticsAsync);
-      case 'stock':
+      case 'stock_levels':
         return _buildStockStatusReport();
-      case 'transactions':
-        return _buildTransactionsReport(transactionsAsync);
+      case 'movements':
+        return _buildStockMovementReport();
       case 'valuation':
         return _buildValuationReport();
-      case 'movement':
-        return _buildStockMovementReport();
       case 'supplier':
         return _buildSupplierAnalysisReport();
+      case 'forecasting':
+        return _buildDemandForecastingReport();
       default:
         return _buildOverviewReport(analyticsAsync);
     }
@@ -275,22 +279,326 @@ class _InventoryReportsTabState extends ConsumerState<InventoryReportsTab> {
     return analyticsAsync.when(
       data: (analytics) => SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Key Metrics
-            _buildMetricsGrid(analytics),
+            // Key Performance Indicators
+            _buildKPISection(analytics),
             const SizedBox(height: 24),
             
-            // Charts Placeholder
-            _buildChartsSection(),
+            // Inventory Health Status
+            _buildInventoryHealthSection(analytics),
             const SizedBox(height: 24),
             
-            // Recent Activity
-            _buildRecentActivitySection(),
+            // Top Products by Value
+            _buildTopProductsSection(analytics),
+            const SizedBox(height: 24),
+            
+            // Category Distribution
+            _buildCategoryDistributionSection(analytics),
           ],
         ),
       ),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => const Center(child: Text('Error loading analytics')),
+    );
+  }
+
+  Widget _buildKPISection(Map<String, dynamic> analytics) {
+    final kpis = [
+      {
+        'title': 'Total Products',
+        'value': '${analytics['totalProducts'] ?? 0}',
+        'icon': Icons.inventory,
+        'color': Colors.blue,
+        'trend': '+5%',
+        'trendColor': Colors.green,
+      },
+      {
+        'title': 'Total Stock Value',
+        'value': '\$${(analytics['totalValue'] ?? 0.0).toStringAsFixed(2)}',
+        'icon': Icons.attach_money,
+        'color': Colors.green,
+        'trend': '+12%',
+        'trendColor': Colors.green,
+      },
+      {
+        'title': 'Low Stock Items',
+        'value': '${analytics['lowStockProducts'] ?? 0}',
+        'icon': Icons.warning,
+        'color': Colors.orange,
+        'trend': '-2',
+        'trendColor': Colors.red,
+      },
+      {
+        'title': 'Out of Stock',
+        'value': '${analytics['outOfStockProducts'] ?? 0}',
+        'icon': Icons.remove_shopping_cart,
+        'color': Colors.red,
+        'trend': '-1',
+        'trendColor': Colors.green,
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Key Performance Indicators',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1.2,
+          ),
+          itemCount: kpis.length,
+          itemBuilder: (context, index) {
+            final kpi = kpis[index];
+            return _buildKPICard(kpi);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKPICard(Map<String, dynamic> kpi) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  kpi['icon'] as IconData,
+                  color: kpi['color'] as Color,
+                  size: 24,
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (kpi['trendColor'] as Color).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    kpi['trend'] as String,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: kpi['trendColor'] as Color,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              kpi['value'] as String,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: kpi['color'] as Color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              kpi['title'] as String,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInventoryHealthSection(Map<String, dynamic> analytics) {
+    final totalProducts = analytics['totalProducts'] ?? 0;
+    final lowStockProducts = analytics['lowStockProducts'] ?? 0;
+    final outOfStockProducts = analytics['outOfStockProducts'] ?? 0;
+    final healthyProducts = totalProducts - lowStockProducts - outOfStockProducts;
+    
+    final healthPercentage = totalProducts > 0 ? (healthyProducts / totalProducts * 100).round() : 0;
+    
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Inventory Health Status',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildHealthIndicator(
+                    'Healthy',
+                    healthyProducts,
+                    Colors.green,
+                    healthPercentage,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildHealthIndicator(
+                    'Low Stock',
+                    lowStockProducts,
+                    Colors.orange,
+                    totalProducts > 0 ? (lowStockProducts / totalProducts * 100).round() : 0,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildHealthIndicator(
+                    'Out of Stock',
+                    outOfStockProducts,
+                    Colors.red,
+                    totalProducts > 0 ? (outOfStockProducts / totalProducts * 100).round() : 0,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            LinearProgressIndicator(
+              value: healthPercentage / 100,
+              backgroundColor: Colors.grey[300],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                healthPercentage >= 80 ? Colors.green : 
+                healthPercentage >= 60 ? Colors.orange : Colors.red,
+              ),
+              minHeight: 8,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Overall Health: $healthPercentage%',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: healthPercentage >= 80 ? Colors.green : 
+                       healthPercentage >= 60 ? Colors.orange : Colors.red,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthIndicator(String label, int count, Color color, int percentage) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Center(
+            child: Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        Text(
+          '$percentage%',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopProductsSection(Map<String, dynamic> analytics) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Top Products by Stock Value',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Center(
+              child: Text(
+                'Product value analysis coming soon!',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryDistributionSection(Map<String, dynamic> analytics) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Category Distribution',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Center(
+              child: Text(
+                'Category analysis and charts coming soon!',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -624,195 +932,24 @@ class _InventoryReportsTabState extends ConsumerState<InventoryReportsTab> {
     );
   }
 
-  Widget _buildTransactionsReport(AsyncValue<List<InventoryTransaction>> transactionsAsync) {
-    return transactionsAsync.when(
-      data: (transactions) => SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildTransactionSummary(transactions),
-            const SizedBox(height: 24),
-            _buildTransactionTable(transactions),
-          ],
-        ),
-      ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Center(child: Text('Error loading transactions')),
-    );
-  }
-
-  Widget _buildTransactionSummary(List<InventoryTransaction> transactions) {
-    final totalTransactions = transactions.length;
-    final totalValue = transactions.fold(0.0, (sum, t) => sum + t.totalCost);
-    final avgValue = totalTransactions > 0 ? totalValue / totalTransactions : 0.0;
-
-    return Row(
-      children: [
-        Expanded(
-          child: _buildSummaryCard(
-            'Total Transactions',
-            totalTransactions.toString(),
-            Icons.receipt_long,
-            Colors.blue,
+  Widget _buildStockMovementReport() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.trending_up, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'Stock Movement Report',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildSummaryCard(
-            'Total Value',
-            '\$${totalValue.toStringAsFixed(2)}',
-            Icons.attach_money,
-            Colors.green,
+          SizedBox(height: 8),
+          Text(
+            'Coming soon! This will show stock movement patterns and trends.',
+            style: TextStyle(color: Colors.grey),
+            textAlign: TextAlign.center,
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildSummaryCard(
-            'Average Value',
-            '\$${avgValue.toStringAsFixed(2)}',
-            Icons.analytics,
-            Colors.purple,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTransactionTable(List<InventoryTransaction> transactions) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Transaction History',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Date')),
-                  DataColumn(label: Text('Product')),
-                  DataColumn(label: Text('Type')),
-                  DataColumn(label: Text('Quantity')),
-                  DataColumn(label: Text('Unit Cost')),
-                  DataColumn(label: Text('Total Cost')),
-                  DataColumn(label: Text('Reference')),
-                ],
-                rows: transactions.map((transaction) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(DateFormat('MMM dd, yyyy').format(transaction.createdAt))),
-                      DataCell(Text(transaction.productName)),
-                      DataCell(_buildTransactionTypeChip(transaction.type)),
-                      DataCell(Text(transaction.quantity.toString())),
-                      DataCell(Text('\$${transaction.unitCost.toStringAsFixed(2)}')),
-                      DataCell(Text('\$${transaction.totalCost.toStringAsFixed(2)}')),
-                      DataCell(Text(transaction.reference ?? '-')),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTransactionTypeChip(TransactionType type) {
-    Color color;
-    String label;
-    
-    switch (type) {
-      case TransactionType.adjustment:
-        color = Colors.blue;
-        label = 'Adjustment';
-        break;
-      case TransactionType.transfer:
-        color = Colors.purple;
-        label = 'Transfer';
-        break;
-      case TransactionType.purchase:
-        color = Colors.green;
-        label = 'Purchase';
-        break;
-      case TransactionType.sale:
-        color = Colors.orange;
-        label = 'Sale';
-        break;
-      case TransactionType.returnItem:
-        color = Colors.red;
-        label = 'Return';
-        break;
-      case TransactionType.damage:
-        color = Colors.red;
-        label = 'Damage';
-        break;
-      case TransactionType.expiry:
-        color = Colors.orange;
-        label = 'Expiry';
-        break;
-      case TransactionType.initial:
-        color = Colors.blue;
-        label = 'Initial';
-        break;
-      case TransactionType.count:
-        color = Colors.purple;
-        label = 'Count';
-        break;
-      default:
-        color = Colors.grey;
-        label = 'Unknown';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
+        ],
       ),
     );
   }
@@ -839,28 +976,6 @@ class _InventoryReportsTabState extends ConsumerState<InventoryReportsTab> {
     );
   }
 
-  Widget _buildStockMovementReport() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.trending_up, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'Stock Movement Report',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Coming soon! This will show stock movement patterns and trends.',
-            style: TextStyle(color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSupplierAnalysisReport() {
     return const Center(
       child: Column(
@@ -875,6 +990,28 @@ class _InventoryReportsTabState extends ConsumerState<InventoryReportsTab> {
           SizedBox(height: 8),
           Text(
             'Coming soon! This will show supplier performance and analysis.',
+            style: TextStyle(color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDemandForecastingReport() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.trending_up, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'Demand Forecasting Report',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Coming soon! This will show demand forecasting and predictions.',
             style: TextStyle(color: Colors.grey),
             textAlign: TextAlign.center,
           ),

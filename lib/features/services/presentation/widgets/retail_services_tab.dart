@@ -233,7 +233,9 @@ class _RetailServicesTabState extends ConsumerState<RetailServicesTab>
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  Row(
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
                                     children: [
                                       Chip(
                                         label: Text(service.category.name.toUpperCase()),
@@ -243,7 +245,6 @@ class _RetailServicesTabState extends ConsumerState<RetailServicesTab>
                                           fontSize: 12,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
                                       if (service.duration != null)
                                         Chip(
                                           label: Text('${service.duration} min'),
@@ -396,7 +397,9 @@ class _RetailServicesTabState extends ConsumerState<RetailServicesTab>
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  Row(
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
                                     children: [
                                       Chip(
                                         label: Text(product.category.name.toUpperCase()),
@@ -406,7 +409,6 @@ class _RetailServicesTabState extends ConsumerState<RetailServicesTab>
                                           fontSize: 12,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
                                       Chip(
                                         label: Text('Stock: ${product.stockQuantity}'),
                                         backgroundColor: _getStockColor(product.stockQuantity, product.reorderPoint).withOpacity(0.2),

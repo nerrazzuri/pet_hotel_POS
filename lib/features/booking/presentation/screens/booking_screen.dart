@@ -930,6 +930,10 @@ class _CreateBookingDialog extends ConsumerStatefulWidget {
 class _CreateBookingDialogState extends ConsumerState<_CreateBookingDialog> {
   final _formKey = GlobalKey<FormState>();
   final _bookingNumberController = TextEditingController();
+  final _checkInDateController = TextEditingController();
+  final _checkOutDateController = TextEditingController();
+  final _checkInTimeController = TextEditingController();
+  final _checkOutTimeController = TextEditingController();
   
   String? _selectedCustomerId;
   String? _selectedPetId;
@@ -948,6 +952,7 @@ class _CreateBookingDialogState extends ConsumerState<_CreateBookingDialog> {
   String _veterinaryNotes = '';
   List<String> _additionalServices = [];
   Map<String, double> _servicePrices = {};
+  bool _isLoading = false;
 
   // Helper method to convert Flutter's TimeOfDay to our custom BookingTimeOfDay
   BookingTimeOfDay _convertToBookingTimeOfDay(TimeOfDay timeOfDay) {
@@ -961,12 +966,92 @@ class _CreateBookingDialogState extends ConsumerState<_CreateBookingDialog> {
     _checkOutDate = DateTime.now().add(const Duration(days: 2));
     _checkInTime = const TimeOfDay(hour: 14, minute: 0);
     _checkOutTime = const TimeOfDay(hour: 11, minute: 0);
+    _updateControllers();
+  }
+
+  // Helper method to update the text controllers
+  void _updateControllers() {
+    _checkInDateController.text = _checkInDate?.toString().split(' ')[0] ?? '';
+    _checkOutDateController.text = _checkOutDate?.toString().split(' ')[0] ?? '';
+    _checkInTimeController.text = _checkInTime?.format(context) ?? '';
+    _checkOutTimeController.text = _checkOutTime?.format(context) ?? '';
   }
 
   @override
   void dispose() {
     _bookingNumberController.dispose();
+    _checkInDateController.dispose();
+    _checkOutDateController.dispose();
+    _checkInTimeController.dispose();
+    _checkOutTimeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveBooking() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedCustomerId == null || _selectedPetId == null || _selectedRoomId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all required fields')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final bookingService = ref.read(bookingServiceProvider);
+      
+      await bookingService.createBooking(
+        customerId: _selectedCustomerId!,
+        petId: _selectedPetId!,
+        roomId: _selectedRoomId!,
+        checkInDate: _checkInDate!,
+        checkOutDate: _checkOutDate!,
+        checkInTime: _convertToBookingTimeOfDay(_checkInTime!),
+        checkOutTime: _convertToBookingTimeOfDay(_checkOutTime!),
+        type: _selectedType,
+        basePricePerNight: _basePricePerNight,
+        additionalServices: _additionalServices.isNotEmpty ? _additionalServices : null,
+        servicePrices: _servicePrices.isNotEmpty ? _servicePrices : null,
+        specialInstructions: _specialInstructions.isNotEmpty ? _specialInstructions : null,
+        careNotes: _careNotes.isNotEmpty ? _careNotes : null,
+        veterinaryNotes: _veterinaryNotes.isNotEmpty ? _veterinaryNotes : null,
+        depositAmount: _depositAmount > 0 ? _depositAmount : null,
+        discountAmount: _discountAmount > 0 ? _discountAmount : null,
+        taxAmount: _taxAmount > 0 ? _taxAmount : null,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Booking created successfully!')),
+        );
+        // Refresh the bookings list
+        ref.invalidate(bookingsProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating booking: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _updateBasePrice() {
+    if (_selectedRoomId != null) {
+      final roomsAsync = ref.read(roomsProvider);
+      roomsAsync.whenData((rooms) {
+        final selectedRoom = rooms.firstWhere((room) => room.id == _selectedRoomId);
+        setState(() {
+          _basePricePerNight = selectedRoom.basePricePerNight;
+        });
+      });
+    }
   }
 
   @override
@@ -1027,13 +1112,17 @@ class _CreateBookingDialogState extends ConsumerState<_CreateBookingDialog> {
                                   ),
                                   items: customerPets.map((pet) => DropdownMenuItem(
                                     value: pet.id,
-                                    child: Text('${pet.name} (${pet.type.name})'),
+                                    child: Text('${pet.name} (${pet.breed})'),
                                   )).toList(),
-                                  onChanged: (value) => setState(() => _selectedPetId = value),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedPetId = value;
+                                    });
+                                  },
                                   validator: (value) => value == null ? 'Please select a pet' : null,
                                 );
                               },
-                              loading: () => CircularProgressIndicator(),
+                              loading: () => const CircularProgressIndicator(),
                               error: (error, stack) => Text('Error: $error'),
                             )
                           : DropdownButtonFormField<String>(
@@ -1041,52 +1130,84 @@ class _CreateBookingDialogState extends ConsumerState<_CreateBookingDialog> {
                               decoration: const InputDecoration(
                                 labelText: 'Pet *',
                                 border: OutlineInputBorder(),
+                                enabled: false,
                               ),
                               items: [],
-                              onChanged: null,
+                              onChanged: (value) {},
                             ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // Room Selection
-                roomsAsync.when(
-                  data: (rooms) {
-                    final availableRooms = rooms.where((room) => room.status == RoomStatus.available).toList();
-                    return DropdownButtonFormField<String>(
-                      value: _selectedRoomId,
-                      decoration: const InputDecoration(
-                        labelText: 'Room *',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: availableRooms.map((room) => DropdownMenuItem(
-                        value: room.id,
-                        child: Text('${room.name} (${room.type.name}) - \$${room.basePricePerNight}/night'),
-                      )).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedRoomId = value;
-                          if (value != null) {
-                            final room = rooms.firstWhere((r) => r.id == value);
-                            _basePricePerNight = room.basePricePerNight;
-                          }
-                        });
-                      },
-                      validator: (value) => value == null ? 'Please select a room' : null,
-                    );
-                  },
-                  loading: () => const CircularProgressIndicator(),
-                  error: (error, stack) => Text('Error: $error'),
-                ),
-                const SizedBox(height: 16),
-
-                // Date and Time Selection
+                // Room Selection and Type
                 Row(
                   children: [
                     Expanded(
-                      child: TextButton.icon(
-                        onPressed: () async {
+                      child: roomsAsync.when(
+                        data: (rooms) => DropdownButtonFormField<String>(
+                          value: _selectedRoomId,
+                          decoration: const InputDecoration(
+                            labelText: 'Room *',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: rooms
+                              .where((room) => room.status == RoomStatus.available)
+                              .map((room) => DropdownMenuItem(
+                                    value: room.id,
+                                    child: Text('${room.roomNumber} - ${room.name} (${room.type.name})'),
+                                  ))
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedRoomId = value;
+                            });
+                            _updateBasePrice();
+                          },
+                          validator: (value) => value == null ? 'Please select a room' : null,
+                        ),
+                        loading: () => const CircularProgressIndicator(),
+                        error: (error, stack) => Text('Error: $error'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: DropdownButtonFormField<BookingType>(
+                        value: _selectedType,
+                        decoration: const InputDecoration(
+                          labelText: 'Booking Type *',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: BookingType.values.map((type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type.name.toUpperCase()),
+                        )).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedType = value;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Dates and Times
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Check-in Date *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.calendar_today),
+                        ),
+                        controller: _checkInDateController,
+                        onTap: () async {
                           final date = await showDatePicker(
                             context: context,
                             initialDate: _checkInDate ?? DateTime.now(),
@@ -1094,187 +1215,227 @@ class _CreateBookingDialogState extends ConsumerState<_CreateBookingDialog> {
                             lastDate: DateTime.now().add(const Duration(days: 365)),
                           );
                           if (date != null) {
-                            setState(() => _checkInDate = date);
+                            setState(() {
+                              _checkInDate = date;
+                              if (_checkOutDate != null && _checkOutDate!.isBefore(date)) {
+                                _checkOutDate = date.add(const Duration(days: 1));
+                              }
+                            });
+                            _updateControllers();
                           }
                         },
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(_checkInDate == null 
-                            ? 'Check-in Date *' 
-                            : '${_checkInDate!.day}/${_checkInDate!.month}/${_checkInDate!.year}'),
+                        validator: (value) => _checkInDate == null ? 'Please select check-in date' : null,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: TextButton.icon(
-                        onPressed: () async {
+                      child: TextFormField(
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Check-out Date *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.calendar_today),
+                        ),
+                        controller: _checkOutDateController,
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: _checkOutDate ?? DateTime.now().add(const Duration(days: 1)),
+                            firstDate: _checkInDate ?? DateTime.now().add(const Duration(days: 1)),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                          );
+                          if (date != null) {
+                            setState(() {
+                              _checkOutDate = date;
+                            });
+                            _updateControllers();
+                          }
+                        },
+                        validator: (value) => _checkOutDate == null ? 'Please select check-out date' : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Check-in Time *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.access_time),
+                        ),
+                        controller: _checkInTimeController,
+                        onTap: () async {
                           final time = await showTimePicker(
                             context: context,
                             initialTime: _checkInTime ?? const TimeOfDay(hour: 14, minute: 0),
                           );
                           if (time != null) {
-                            setState(() => _checkInTime = time);
+                            setState(() {
+                              _checkInTime = time;
+                            });
+                            _updateControllers();
                           }
                         },
-                        icon: const Icon(Icons.access_time),
-                        label: Text(_checkInTime == null 
-                            ? 'Check-in Time *' 
-                            : '${_checkInTime!.hour}:${_checkInTime!.minute.toString().padLeft(2, '0')}'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton.icon(
-                        onPressed: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: _checkOutDate ?? DateTime.now().add(const Duration(days: 1)),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (date != null) {
-                            setState(() => _checkOutDate = date);
-                          }
-                        },
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(_checkOutDate == null 
-                            ? 'Check-out Date *' 
-                            : '${_checkOutDate!.day}/${_checkOutDate!.month}/${_checkOutDate!.year}'),
+                        validator: (value) => _checkInTime == null ? 'Please select check-in time' : null,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: TextButton.icon(
-                        onPressed: () async {
+                      child: TextFormField(
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Check-out Time *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.access_time),
+                        ),
+                        controller: _checkOutTimeController,
+                        onTap: () async {
                           final time = await showTimePicker(
                             context: context,
                             initialTime: _checkOutTime ?? const TimeOfDay(hour: 11, minute: 0),
                           );
                           if (time != null) {
-                            setState(() => _checkOutTime = time);
+                            setState(() {
+                              _checkOutTime = time;
+                            });
+                            _updateControllers();
                           }
                         },
-                        icon: const Icon(Icons.access_time),
-                        label: Text(_checkOutTime == null 
-                            ? 'Check-out Time *' 
-                            : '${_checkOutTime!.hour}:${_checkOutTime!.minute.toString().padLeft(2, '0')}'),
+                        validator: (value) => _checkOutTime == null ? 'Please select check-out time' : null,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // Booking Type and Pricing
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<BookingType>(
-                        value: _selectedType,
-                        decoration: const InputDecoration(
-                          labelText: 'Booking Type',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: BookingType.values.map((type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type.name.toUpperCase()),
-                        )).toList(),
-                        onChanged: (value) => setState(() => _selectedType = value!),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        initialValue: _basePricePerNight.toString(),
-                        decoration: const InputDecoration(
-                          labelText: 'Base Price per Night (\$)',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) => setState(() => _basePricePerNight = double.tryParse(value) ?? 0.0),
-                        validator: (value) => value == null || value.isEmpty ? 'Please enter base price' : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Additional Costs
+                // Pricing Section
                 Row(
                   children: [
                     Expanded(
                       child: TextFormField(
-                        initialValue: _depositAmount.toString(),
+                        readOnly: true,
                         decoration: const InputDecoration(
-                          labelText: 'Deposit Amount (\$)',
+                          labelText: 'Base Price per Night',
                           border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.attach_money),
                         ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) => setState(() => _depositAmount = double.tryParse(value) ?? 0.0),
+                        controller: TextEditingController(
+                          text: '\$${_basePricePerNight.toStringAsFixed(2)}',
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: TextFormField(
-                        initialValue: _discountAmount.toString(),
                         decoration: const InputDecoration(
-                          labelText: 'Discount Amount (\$)',
+                          labelText: 'Deposit Amount',
                           border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.payment),
                         ),
                         keyboardType: TextInputType.number,
-                        onChanged: (value) => setState(() => setState(() => _discountAmount = double.tryParse(value) ?? 0.0)),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        initialValue: _taxAmount.toString(),
-                        decoration: const InputDecoration(
-                          labelText: 'Tax Amount (\$)',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) => setState(() => _taxAmount = double.tryParse(value) ?? 0.0),
+                        onChanged: (value) {
+                          setState(() {
+                            _depositAmount = double.tryParse(value) ?? 0.0;
+                          });
+                        },
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // Notes
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Discount Amount',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.discount),
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          setState(() {
+                            _discountAmount = double.tryParse(value) ?? 0.0;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Tax Amount',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.receipt),
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          setState(() {
+                            _taxAmount = double.tryParse(value) ?? 0.0;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Notes Section
                 TextFormField(
-                  initialValue: _specialInstructions,
                   decoration: const InputDecoration(
                     labelText: 'Special Instructions',
                     border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.note),
                   ),
                   maxLines: 2,
-                  onChanged: (value) => setState(() => _specialInstructions = value),
+                  onChanged: (value) {
+                    setState(() {
+                      _specialInstructions = value;
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
 
-                TextFormField(
-                  initialValue: _careNotes,
-                  decoration: const InputDecoration(
-                    labelText: 'Care Notes',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                  onChanged: (value) => setState(() => _careNotes = value),
-                ),
-                const SizedBox(height: 16),
-
-                TextFormField(
-                  initialValue: _veterinaryNotes,
-                  decoration: const InputDecoration(
-                    labelText: 'Veterinary Notes',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                  onChanged: (value) => setState(() => _veterinaryNotes = value),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Care Notes',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.pets),
+                        ),
+                        maxLines: 2,
+                        onChanged: (value) {
+                          setState(() {
+                            _careNotes = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextFormField(
+                        decoration: const InputDecoration(
+                          labelText: 'Veterinary Notes',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.medical_services),
+                        ),
+                        maxLines: 2,
+                        onChanged: (value) {
+                          setState(() {
+                            _veterinaryNotes = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1283,72 +1444,21 @@ class _CreateBookingDialogState extends ConsumerState<_CreateBookingDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _createBooking,
-          child: const Text('Create Booking'),
+          onPressed: _isLoading ? null : _saveBooking,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Create Booking'),
         ),
       ],
     );
-  }
-
-  Future<void> _createBooking() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_checkInDate == null || _checkOutDate == null || _checkInTime == null || _checkOutTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select check-in and check-out dates and times')),
-      );
-      return;
-    }
-
-    try {
-      final bookingService = ref.read(bookingServiceProvider);
-      final customer = ref.read(customersProvider).value?.firstWhere((c) => c.id == _selectedCustomerId);
-      final pet = ref.read(petsProvider).value?.firstWhere((p) => p.id == _selectedPetId);
-      final room = ref.read(roomsProvider).value?.firstWhere((r) => r.id == _selectedRoomId);
-
-      if (customer == null || pet == null || room == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select customer, pet, and room')),
-        );
-        return;
-      }
-
-      await bookingService.createBooking(
-        customerId: _selectedCustomerId!,
-        petId: _selectedPetId!,
-        roomId: _selectedRoomId!,
-        checkInDate: _checkInDate!,
-        checkOutDate: _checkOutDate!,
-        checkInTime: _convertToBookingTimeOfDay(_checkInTime!),
-        checkOutTime: _convertToBookingTimeOfDay(_checkOutTime!),
-        type: _selectedType,
-        basePricePerNight: _basePricePerNight,
-        additionalServices: _additionalServices.isNotEmpty ? _additionalServices : null,
-        servicePrices: _servicePrices.isNotEmpty ? _servicePrices : null,
-        specialInstructions: _specialInstructions.isNotEmpty ? _specialInstructions : null,
-        careNotes: _careNotes.isNotEmpty ? _careNotes : null,
-        veterinaryNotes: _veterinaryNotes.isNotEmpty ? _veterinaryNotes : null,
-        depositAmount: _depositAmount > 0 ? _depositAmount : null,
-        discountAmount: _discountAmount > 0 ? _discountAmount : null,
-        taxAmount: _taxAmount > 0 ? _taxAmount : null,
-      );
-
-      Navigator.of(context).pop();
-      ref.invalidate(bookingsProvider);
-      ref.invalidate(activeBookingsProvider);
-      ref.invalidate(upcomingBookingsProvider);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking created successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error creating booking: $e')),
-      );
-    }
   }
 }
 

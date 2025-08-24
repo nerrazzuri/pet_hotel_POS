@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cat_hotel_pos/features/pos/presentation/providers/pos_providers.dart';
+import 'package:cat_hotel_pos/features/pos/domain/entities/cart_item.dart';
 
 class CartSection extends ConsumerWidget {
   const CartSection({super.key});
@@ -12,347 +13,568 @@ class CartSection extends ConsumerWidget {
     final cartSubtotal = ref.watch(cartSubtotalProvider);
     final cartTaxAmount = ref.watch(cartTaxAmountProvider);
     final cartDiscountAmount = ref.watch(cartDiscountAmountProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
+         return Container(
+       decoration: BoxDecoration(
+         color: colorScheme.surface,
+         borderRadius: const BorderRadius.only(
+           topLeft: Radius.circular(20),
+           bottomLeft: Radius.circular(20),
+         ),
+       ),
+      child: Column(
+        children: [
+          // Enhanced Header
+          _buildEnhancedHeader(context, theme, colorScheme, cartItems, ref),
+          
+          // Cart Items with improved styling
+          Expanded(
+            child: cartItems.isEmpty
+                ? _buildEmptyCartState(theme, colorScheme)
+                : _buildCartItemsList(cartItems, theme, colorScheme, ref),
+          ),
+          
+          // Enhanced Cart Summary
+          if (cartItems.isNotEmpty) _buildCartSummary(
+            cartSubtotal,
+            cartTaxAmount,
+            cartDiscountAmount,
+            cartTotal,
+            theme,
+            colorScheme,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedHeader(BuildContext context, ThemeData theme, ColorScheme colorScheme, List<CartItem> cartItems, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        color: colorScheme.primaryContainer.withOpacity(0.1),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Header
+          // Header with Cart Icon and Title
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.shopping_cart,
+                  color: colorScheme.onPrimary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.shopping_cart,
-                    color: Colors.teal,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'Current Cart',
-                    style: TextStyle(
-                      fontSize: 20,
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    '${cartItems.length} item${cartItems.length == 1 ? '' : 's'}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
-              if (cartItems.isNotEmpty)
-                TextButton.icon(
-                  onPressed: () {
-                    _showClearCartDialog(context, ref);
-                  },
-                  icon: const Icon(Icons.clear_all),
-                  label: const Text('Clear'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.red[600],
-                    backgroundColor: Colors.red[50],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
             ],
           ),
           
-          const SizedBox(height: 16),
-          
-          // Cart Items
-          if (cartItems.isEmpty)
-            const Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.shopping_cart_outlined,
-                      size: 64,
-                      color: Colors.grey,
+          // Action Buttons
+          if (cartItems.isNotEmpty)
+            Row(
+              children: [
+                // Hold Cart Button
+                Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    onPressed: () => _showHoldCartDialog(context, ref),
+                    icon: Icon(
+                      Icons.pause_circle_outline,
+                      color: colorScheme.onSecondaryContainer,
+                      size: 20,
                     ),
-                    SizedBox(height: 16),
-                    Text(
-                      'Cart is empty',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    tooltip: 'Hold Cart',
+                    style: IconButton.styleFrom(
+                      padding: const EdgeInsets.all(8),
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Add items from the product grid',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.builder(
-                itemCount: cartItems.length,
-                itemBuilder: (context, index) {
-                  final item = cartItems[index];
-                  return _CartItemCard(
-                    item: item,
-                    onQuantityChanged: (newQuantity) {
-                      if (newQuantity <= 0) {
-                        ref.read(currentCartProvider.notifier).removeCartItem(item.id);
-                      } else {
-                        final updatedItem = item.copyWith(quantity: newQuantity);
-                        ref.read(currentCartProvider.notifier).updateCartItem(
-                          item.id,
-                          updatedItem,
-                        );
-                      }
-                    },
-                    onRemove: () {
-                      ref.read(currentCartProvider.notifier).removeCartItem(item.id);
-                    },
-                  );
-                },
-              ),
+                
+                const SizedBox(width: 8),
+                
+                // Clear Cart Button
+                Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    onPressed: () => _showClearCartDialog(context, ref),
+                    icon: Icon(
+                      Icons.clear_all,
+                      color: colorScheme.onErrorContainer,
+                      size: 20,
+                    ),
+                    tooltip: 'Clear Cart',
+                    style: IconButton.styleFrom(
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          
-          // Cart Summary
-          if (cartItems.isNotEmpty) ...[
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 16),
-              height: 1,
-              color: Colors.grey[300],
-            ),
-            
-            // Subtotal
-            _SummaryRow(
-              label: 'Subtotal',
-              value: cartSubtotal,
-            ),
-            
-            // Tax
-            _SummaryRow(
-              label: 'Tax (6%)',
-              value: cartTaxAmount,
-            ),
-            
-            // Discount
-            if (cartDiscountAmount > 0)
-              _SummaryRow(
-                label: 'Discount',
-                value: -cartDiscountAmount,
-                valueColor: Colors.green[600],
-              ),
-            
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              height: 1,
-              color: Colors.grey[300],
-            ),
-            
-            // Total
-            _SummaryRow(
-              label: 'Total',
-              value: cartTotal,
-              isTotal: true,
-            ),
-          ],
         ],
       ),
     );
   }
 
-  void _showClearCartDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Cart'),
-        content: const Text('Are you sure you want to clear all items from the cart?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+  Widget _buildEmptyCartState(ThemeData theme, ColorScheme colorScheme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceVariant.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.shopping_cart_outlined,
+              size: 48,
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              ref.read(currentCartProvider.notifier).clearCart();
-              Navigator.of(context).pop();
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Clear'),
+          const SizedBox(height: 20),
+          Text(
+            'Cart is empty',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add services from the product grid',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Start by selecting a service',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class _CartItemCard extends StatelessWidget {
-  final dynamic item;
-  final Function(int) onQuantityChanged;
-  final VoidCallback onRemove;
+  Widget _buildCartItemsList(List<CartItem> cartItems, ThemeData theme, ColorScheme colorScheme, WidgetRef ref) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: cartItems.length,
+      itemBuilder: (context, index) {
+        final item = cartItems[index];
+        return _buildCartItemCard(item, theme, colorScheme, ref);
+      },
+    );
+  }
 
-  const _CartItemCard({
-    required this.item,
-    required this.onQuantityChanged,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shadowColor: Colors.black.withOpacity(0.05),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+     Widget _buildCartItemCard(CartItem item, ThemeData theme, ColorScheme colorScheme, WidgetRef ref) {
+     return Container(
+       margin: const EdgeInsets.only(bottom: 8),
+       decoration: BoxDecoration(
+         color: colorScheme.surface,
+         borderRadius: BorderRadius.circular(12),
+         border: Border.all(
+           color: colorScheme.outline.withOpacity(0.1),
+         ),
+         boxShadow: [
+           BoxShadow(
+             color: colorScheme.shadow.withOpacity(0.05),
+             blurRadius: 8,
+             offset: const Offset(0, 1),
+           ),
+         ],
+       ),
+       child: Padding(
+         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            // Item Info
+            // Item Icon
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _getCategoryColor(item.category).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _getCategoryColor(item.category).withOpacity(0.3),
+                ),
+              ),
+              child: Icon(
+                _getCategoryIcon(item.category),
+                color: _getCategoryColor(item.category),
+                size: 20,
+              ),
+            ),
+            
+            const SizedBox(width: 16),
+            
+            // Item Details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     item.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.grey,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
-                    '\$${item.price.toStringAsFixed(2)} each',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
+                    item.category ?? 'Unknown',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        '\$${item.price.toStringAsFixed(2)}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: _getCategoryColor(item.category),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Total: \$${(item.price * item.quantity).toStringAsFixed(2)}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             
+            const SizedBox(width: 16),
+            
             // Quantity Controls
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => onQuantityChanged(item.quantity - 1),
-                    icon: const Icon(Icons.remove_circle_outline),
-                    iconSize: 20,
-                    color: Colors.grey[600],
+            Column(
+              children: [
+                // Quantity Display
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    child: Text(
-                      item.quantity.toString(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
+                  child: Text(
+                    '${item.quantity}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onPrimaryContainer,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => onQuantityChanged(item.quantity + 1),
-                    icon: const Icon(Icons.add_circle_outline),
-                    iconSize: 20,
-                    color: Colors.teal,
-                  ),
-                ],
-              ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Quantity Controls
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Decrease Button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceVariant,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: IconButton(
+                        onPressed: () => _decreaseQuantity(ref, item),
+                        icon: Icon(
+                          Icons.remove,
+                          color: colorScheme.onSurfaceVariant,
+                          size: 16,
+                        ),
+                        style: IconButton.styleFrom(
+                          padding: const EdgeInsets.all(4),
+                          minimumSize: const Size(24, 24),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 8),
+                    
+                    // Increase Button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: IconButton(
+                        onPressed: () => _increaseQuantity(ref, item),
+                        icon: Icon(
+                          Icons.add,
+                          color: colorScheme.onPrimary,
+                          size: 16,
+                        ),
+                        style: IconButton.styleFrom(
+                          padding: const EdgeInsets.all(4),
+                          minimumSize: const Size(24, 24),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
             
             const SizedBox(width: 12),
             
-            // Total Price
-            SizedBox(
-              width: 80,
-              child: Text(
-                '\$${(item.price * item.quantity).toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.teal,
-                ),
-                textAlign: TextAlign.right,
-              ),
-            ),
-            
-            const SizedBox(width: 8),
-            
             // Remove Button
             IconButton(
-              onPressed: onRemove,
-              icon: const Icon(Icons.delete_outline),
-              iconSize: 20,
-              color: Colors.red[400],
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.red[50],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+              onPressed: () => _removeItem(ref, item),
+              icon: Icon(
+                Icons.delete_outline,
+                color: colorScheme.error,
+                size: 20,
               ),
+              tooltip: 'Remove Item',
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class _SummaryRow extends StatelessWidget {
-  final String label;
-  final double value;
-  final Color? valueColor;
-  final bool isTotal;
+     Widget _buildCartSummary(double subtotal, double tax, double discount, double total, ThemeData theme, ColorScheme colorScheme) {
+     return Container(
+       padding: const EdgeInsets.all(16),
+       decoration: BoxDecoration(
+         color: colorScheme.surfaceVariant.withOpacity(0.3),
+         borderRadius: const BorderRadius.only(
+           bottomLeft: Radius.circular(20),
+           bottomRight: Radius.circular(20),
+         ),
+       ),
+      child: Column(
+        children: [
+          // Summary Row
+          _buildSummaryRow('Subtotal', subtotal, theme, colorScheme),
+          if (tax > 0) _buildSummaryRow('Tax', tax, theme, colorScheme),
+          if (discount > 0) _buildSummaryRow('Discount', -discount, theme, colorScheme, isDiscount: true),
+          
+          const Divider(height: 20),
+          
+          // Total Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                '\$${total.toStringAsFixed(2)}',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-  const _SummaryRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-    this.isTotal = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSummaryRow(String label, double amount, ThemeData theme, ColorScheme colorScheme, {bool isDiscount = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: TextStyle(
-              fontSize: isTotal ? 18 : 16,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-              color: isTotal ? Colors.grey : Colors.grey[600],
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           Text(
-            '\$${value.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: isTotal ? 20 : 16,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: valueColor ?? (isTotal ? Colors.teal : Colors.grey[700]),
+            '\$${amount.toStringAsFixed(2)}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isDiscount ? colorScheme.error : colorScheme.onSurface,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getCategoryColor(String? category) {
+    if (category == null) return Colors.grey;
+    
+    switch (category.toLowerCase()) {
+      case 'boarding':
+        return Colors.blue;
+      case 'daycare':
+        return Colors.orange;
+      case 'grooming':
+        return Colors.teal;
+      case 'addons':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getCategoryIcon(String? category) {
+    if (category == null) return Icons.category;
+    
+    switch (category.toLowerCase()) {
+      case 'boarding':
+        return Icons.hotel;
+      case 'daycare':
+        return Icons.sunny;
+      case 'grooming':
+        return Icons.content_cut;
+      case 'addons':
+        return Icons.add_circle;
+      default:
+        return Icons.category;
+    }
+  }
+
+  void _increaseQuantity(WidgetRef ref, CartItem item) {
+    final updatedItem = item.copyWith(quantity: item.quantity + 1);
+    ref.read(currentCartProvider.notifier).updateCartItem(item.id, updatedItem);
+  }
+
+  void _decreaseQuantity(WidgetRef ref, CartItem item) {
+    if (item.quantity > 1) {
+      final updatedItem = item.copyWith(quantity: item.quantity - 1);
+      ref.read(currentCartProvider.notifier).updateCartItem(item.id, updatedItem);
+    }
+  }
+
+  void _removeItem(WidgetRef ref, CartItem item) {
+    ref.read(currentCartProvider.notifier).removeCartItem(item.id);
+  }
+
+  void _showClearCartDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning_amber,
+              color: Colors.orange[600],
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            const Text('Clear Cart'),
+          ],
+        ),
+        content: const Text('Are you sure you want to clear all items from the cart? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+                      ElevatedButton(
+              onPressed: () {
+                ref.read(currentCartProvider.notifier).clearCart();
+                Navigator.pop(context);
+              },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[600],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Clear Cart'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHoldCartDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.pause_circle_outline,
+              color: Colors.blue[600],
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            const Text('Hold Cart'),
+          ],
+        ),
+        content: const Text('This cart will be saved and can be retrieved later. Continue?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: Implement hold cart functionality
+              Navigator.pop(context);
+            },
+            child: const Text('Hold Cart'),
           ),
         ],
       ),

@@ -98,12 +98,53 @@ class _ProductManagementTabState extends ConsumerState<ProductManagementTab> {
             const SizedBox(height: 4),
             Text(
               'Manage your product catalog and inventory',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
             ),
           ],
         ),
         Row(
           children: [
+            // Low Stock Alert Button
+            Consumer(
+              builder: (context, ref, child) {
+                final lowStockProducts = ref.watch(lowStockProductsProvider);
+                return lowStockProducts.when(
+                  data: (products) {
+                    if (products.isNotEmpty) {
+                      return Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showLowStockAlert(products),
+                          icon: const Icon(Icons.warning, color: Colors.orange),
+                          label: Text('${products.length} Low Stock'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange[100],
+                            foregroundColor: Colors.orange[800],
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                );
+              },
+            ),
+            // Add Product Button
+            ElevatedButton.icon(
+              onPressed: _showAddProductDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Product'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
             // Bulk Import Button
             OutlinedButton.icon(
               onPressed: _showBulkImportDialog,
@@ -123,17 +164,6 @@ class _ProductManagementTabState extends ConsumerState<ProductManagementTab> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.green[600],
                 side: BorderSide(color: Colors.green[600]!),
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Add Product Button
-            ElevatedButton.icon(
-              onPressed: () => _showAddProductDialog(),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Product'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
               ),
             ),
           ],
@@ -481,6 +511,116 @@ class _ProductManagementTabState extends ConsumerState<ProductManagementTab> {
         );
       }
     }
+  }
+
+  void _showLowStockAlert(List<Product> lowStockProducts) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.orange[600]),
+            const SizedBox(width: 8),
+            const Text('Low Stock Alert'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${lowStockProducts.length} products are running low on stock:',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ...lowStockProducts.map((product) {
+                final stockLevel = product.stockQuantity;
+                final reorderPoint = product.reorderPoint;
+                final urgency = stockLevel <= reorderPoint * 0.5 ? 'Critical' : 'Warning';
+                final urgencyColor = stockLevel <= reorderPoint * 0.5 ? Colors.red : Colors.orange;
+                
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: urgencyColor.withOpacity(0.1),
+                      child: Icon(
+                        stockLevel <= reorderPoint * 0.5 ? Icons.error : Icons.warning,
+                        color: urgencyColor,
+                      ),
+                    ),
+                    title: Text(
+                      product.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Stock: $stockLevel units'),
+                        Text('Reorder Point: $reorderPoint units'),
+                        Text(
+                          'Urgency: $urgency',
+                          style: TextStyle(
+                            color: urgencyColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: ElevatedButton(
+                      onPressed: () => _createPurchaseOrderForProduct(product),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      child: const Text('Order'),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () => _createBulkPurchaseOrder(lowStockProducts),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Create Bulk Order'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _createPurchaseOrderForProduct(Product product) {
+    // TODO: Implement purchase order creation for specific product
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Creating purchase order for ${product.name}...'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+  void _createBulkPurchaseOrder(List<Product> products) {
+    // TODO: Implement bulk purchase order creation
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Creating bulk purchase order for ${products.length} products...'),
+        backgroundColor: Colors.blue,
+      ),
+    );
   }
 }
 

@@ -23,6 +23,29 @@ enum PetType {
   other,
 }
 
+extension PetTypeExtension on PetType {
+  String get displayName {
+    switch (this) {
+      case PetType.cat:
+        return 'Cat';
+      case PetType.dog:
+        return 'Dog';
+      case PetType.bird:
+        return 'Bird';
+      case PetType.rabbit:
+        return 'Rabbit';
+      case PetType.hamster:
+        return 'Hamster';
+      case PetType.guineaPig:
+        return 'Guinea Pig';
+      case PetType.ferret:
+        return 'Ferret';
+      case PetType.other:
+        return 'Other';
+    }
+  }
+}
+
 @JsonEnum()
 enum PetGender {
   @JsonValue('male')

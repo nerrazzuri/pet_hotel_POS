@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:cat_hotel_pos/features/auth/domain/entities/user.dart';
 import 'package:cat_hotel_pos/features/auth/domain/services/auth_service.dart';
 import 'package:cat_hotel_pos/features/auth/domain/services/secure_storage_service.dart';
@@ -139,19 +141,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Cat Hotel POS - Dashboard'),
-        backgroundColor: Colors.blue[700],
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-            tooltip: 'Logout',
+      body: Column(
+        children: [
+          // Custom Title Bar
+          Container(
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.blue[700],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Title (Draggable)
+                Expanded(
+                  child: GestureDetector(
+                    onPanStart: (details) {
+                      if (!kIsWeb) {
+                        windowManager.startDragging();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.dashboard,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Cat Hotel POS - Dashboard',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Window Controls
+                Row(
+                  children: [
+                    // Logout Button
+                    IconButton(
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      onPressed: _logout,
+                      tooltip: 'Logout',
+                    ),
+                    // Minimize Button
+                    IconButton(
+                      icon: const Icon(Icons.remove, color: Colors.white),
+                      onPressed: () async {
+                        if (!kIsWeb) {
+                          await windowManager.minimize();
+                        }
+                      },
+                      tooltip: 'Minimize',
+                    ),
+                    // Maximize Button
+                    IconButton(
+                      icon: const Icon(Icons.crop_free, color: Colors.white),
+                      onPressed: () async {
+                        if (!kIsWeb) {
+                          await windowManager.maximize();
+                        }
+                      },
+                      tooltip: 'Maximize',
+                    ),
+                    // Close Button
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () async {
+                        if (!kIsWeb) {
+                          await windowManager.close();
+                        }
+                      },
+                      tooltip: 'Close',
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
+          // Dashboard Content
+          Expanded(child: _buildDashboardBody()),
         ],
       ),
-      body: _buildDashboardBody(),
     );
   }
 
@@ -176,55 +261,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildUserInfoCardWithRoleSummary() {
-    return Card(
-      elevation: 4,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue[700]!,
+            Colors.indigo[600]!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue[700]!.withOpacity(0.3),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.blue[100],
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.3)),
+              ),
               child: Icon(
                 Icons.person,
-                size: 30,
-                color: Colors.blue[700],
+                size: 32,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 24),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome, ${_currentUser!.fullName}!',
+                    'Welcome back, ${_currentUser!.fullName}!',
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Role: ${_currentUser!.role.name}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _getRoleColor(_currentUser!.role),
-                      borderRadius: BorderRadius.circular(20),
+                  Text(
+                    'Ready to manage your cat hotel operations?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.9),
                     ),
-                    child: Text(
-                      _getRoleDescription(_currentUser!.role),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.verified_user,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _getRoleDescription(_currentUser!.role),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.2)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    _getGreetingEmoji(),
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _getGreeting(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -237,118 +381,115 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatisticsAndStatusRow() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 800) {
-          // Side by side on larger screens
-          return Row(
-            children: [
-              Expanded(child: _buildStatisticsSection()),
-              const SizedBox(width: 16),
-              Expanded(child: _buildSystemStatusSection()),
-            ],
-          );
-        } else {
-          // Stacked on smaller screens
-          return Column(
-            children: [
-              _buildStatisticsSection(),
-              const SizedBox(height: 16),
-              _buildSystemStatusSection(),
-            ],
-          );
-        }
-      },
-    );
-  }
-
-  Widget _buildStatisticsSection() {
-    return Card(
-      elevation: 2,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue[50]!,
+            Colors.blue[100]!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Row(
               children: [
-                Icon(Icons.analytics, color: Colors.blue[600]),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[600],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.analytics,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Text(
-                  'Real-time Statistics',
+                  'Real-time Statistics & System Status',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[800],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            _buildCompactSummaryItem('Total Sales', '\$2,450', Icons.attach_money),
-            _buildCompactSummaryItem('Orders Today', '12', Icons.shopping_cart),
-            _buildCompactSummaryItem('Active Pets', '8', Icons.pets),
+            const SizedBox(height: 20),
+            // Single row with all statistics
+            Row(
+              children: [
+                Expanded(
+                  child: _buildCompactSummaryItem('Total Sales', '\$2,450', Icons.attach_money, statusColor: Colors.green),
+                ),
+                Expanded(
+                  child: _buildCompactSummaryItem('Orders Today', '12', Icons.shopping_cart, statusColor: Colors.orange),
+                ),
+                Expanded(
+                  child: _buildCompactSummaryItem('Active Pets', '8', Icons.pets, statusColor: Colors.purple),
+                ),
+                Expanded(
+                  child: _buildCompactSummaryItem('Database', 'Online', Icons.storage, statusColor: Colors.blue),
+                ),
+                Expanded(
+                  child: _buildCompactSummaryItem('POS System', 'Active', Icons.point_of_sale, statusColor: Colors.green),
+                ),
+                Expanded(
+                  child: _buildCompactSummaryItem('Backup', '2h ago', Icons.backup, statusColor: Colors.orange),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSystemStatusSection() {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.monitor, color: Colors.green[600]),
-                const SizedBox(width: 8),
-                Text(
-                  'System Status',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[800],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildCompactSummaryItem('Database', 'Online', Icons.storage, statusColor: Colors.green),
-            _buildCompactSummaryItem('POS System', 'Active', Icons.point_of_sale, statusColor: Colors.green),
-            _buildCompactSummaryItem('Backup', 'Last: 2h ago', Icons.backup, statusColor: Colors.orange),
-          ],
-        ),
-      ),
-    );
-  }
+
+
+
+    
 
   Widget _buildCompactSummaryItem(String label, String value, IconData icon, {Color? statusColor}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue[200]!.withOpacity(0.3)),
+      ),
+      child: Column(
         children: [
-          Icon(icon, size: 16, color: Colors.grey[600]),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-          ),
+          Icon(icon, size: 20, color: statusColor ?? Colors.blue[600]),
+          const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: statusColor ?? Colors.grey[800],
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: statusColor ?? Colors.blue[800],
             ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.blue[700],
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -360,28 +501,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     final availableModules = _getAvailableModulesForUser(_currentUser!);
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Available Modules',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.apps,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Available Modules',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.3)),
+                ),
+                child: Text(
+                  '${availableModules.length} modules',
+                  style: TextStyle(
+                    color: Theme.of(context).primaryColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 3,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 4.0,
-          children: availableModules,
-        ),
-      ],
+          const SizedBox(height: 24),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 3,
+            crossAxisSpacing: 20,
+            mainAxisSpacing: 20,
+            childAspectRatio: 3.5,
+            children: availableModules,
+          ),
+        ],
+      ),
     );
   }
 
@@ -401,10 +584,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Process transactions and manage sales',
         Icons.point_of_sale,
         Colors.blue,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const POSScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/pos'),
       ));
     }
 
@@ -422,10 +602,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Manage staff, schedules, and roles',
         Icons.people,
         Colors.green,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const StaffManagementScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/staff'),
       ));
     }
 
@@ -439,10 +616,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Manage customer and pet information',
         Icons.pets,
         Colors.orange,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CustomerPetProfilesScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/customers'),
       ));
     }
 
@@ -460,10 +634,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Track accounts, transactions, and budgets',
         Icons.account_balance,
         Colors.purple,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const FinancialOperationsScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/financials'),
       ));
     }
 
@@ -481,10 +652,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Configure system preferences',
         Icons.settings,
         Colors.grey,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SettingsScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/settings'),
+      ));
+    }
+
+    // Setup Wizard - Owner, Admin only
+    final hasSetupWizardPermission = user.role == UserRole.owner || user.role == UserRole.administrator;
+    print('Dashboard: Setup Wizard permission check: $hasSetupWizardPermission');
+    if (hasSetupWizardPermission) {
+      print('Dashboard: Adding Setup Wizard for user: ${user.username}');
+      modules.add(_buildModuleCard(
+        'Setup Wizard',
+        'Configure system features and permissions',
+        Icons.admin_panel_settings,
+        Colors.deepOrange,
+        () => Navigator.pushNamed(context, '/setup-wizard'),
       ));
     }
 
@@ -501,10 +683,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Manage loyalty programs and customer relationships',
         Icons.card_giftcard,
         Colors.red,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const LoyaltyManagementScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/loyalty'),
       ));
     }
 
@@ -518,10 +697,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Campaigns, templates, and automated reminders',
         Icons.campaign,
         Colors.teal,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CrmManagementScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/crm'),
       ));
     }
 
@@ -535,10 +711,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Manage reservations and room availability',
         Icons.hotel,
         Colors.indigo,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const BookingScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/booking'),
       ));
     }
 
@@ -556,10 +729,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Manage rooms, cages, and facilities',
         Icons.room,
         Colors.deepPurple,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const RoomManagementScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/rooms'),
       ));
     }
 
@@ -577,10 +747,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Manage stock, supplies, and purchases',
         Icons.inventory,
         Colors.amber,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const InventoryScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/inventory'),
       ));
     }
 
@@ -599,10 +766,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         description,
         Icons.analytics,
         Colors.cyan,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ReportsScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/reports'),
       ));
     }
 
@@ -619,10 +783,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Handle payments and invoicing',
         Icons.payment,
         Colors.lightGreen,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const PaymentsScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/payments'),
       ));
     }
 
@@ -639,10 +800,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'Manage pet care services and packages',
         Icons.spa,
         Colors.pink,
-        () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ServicesScreen()),
-        ),
+        () => Navigator.pushNamed(context, '/services'),
       ));
     }
 
@@ -657,56 +815,98 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color color,
     VoidCallback onTap,
   ) {
-    return Card(
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(12), // Reduced from 16 to 12
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8), // Reduced from 12 to 8
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6), // Reduced from 8 to 6
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 20, // Reduced from 24 to 20
-                ),
-              ),
-              const SizedBox(width: 10), // Reduced from 12 to 10
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 13, // Reduced from 14 to 13
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            color.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        color.withOpacity(0.1),
+                        color.withOpacity(0.2),
+                      ],
                     ),
-                    const SizedBox(height: 2), // Reduced from 4 to 2
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 10, // Reduced from 11 to 10
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: color.withOpacity(0.3)),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 24,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -716,30 +916,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildFooter() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.grey[50]!,
+            Colors.grey[100]!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '© 2024 Cat Hotel POS System',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.pets,
+                  size: 16,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '© 2024 Cat Hotel POS System',
+                style: TextStyle(
+                  color: Colors.grey[700],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
           Row(
             children: [
-              Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Text(
-                'v1.0.0',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 6),
+                    Text(
+                      'v1.0.0',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.green[100],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.green[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.circle, size: 8, color: Colors.green[600]),
+                    const SizedBox(width: 6),
+                    Text(
+                      'System Online',
+                      style: TextStyle(
+                        color: Colors.green[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -772,6 +1033,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return 'General Manager';
       case UserRole.staff:
         return 'Staff Member';
+    }
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good Morning';
+    } else if (hour < 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
+  }
+
+  String _getGreetingEmoji() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return '🌅';
+    } else if (hour < 17) {
+      return '🌞';
+    } else {
+      return '🌙';
     }
   }
 }

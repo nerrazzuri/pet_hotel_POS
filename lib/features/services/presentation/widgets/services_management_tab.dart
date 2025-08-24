@@ -25,17 +25,21 @@ class _ServicesManagementTabState extends ConsumerState<ServicesManagementTab> {
   }
 
   Future<void> _loadServices() async {
+    if (!mounted) return;
+    
     setState(() => _isLoading = true);
     try {
       final services = await _serviceDao.getAll();
-      setState(() {
-        _services = services;
-        _filteredServices = services;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
       if (mounted) {
+        setState(() {
+          _services = services;
+          _filteredServices = services;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading services: $e')),
         );
@@ -44,6 +48,8 @@ class _ServicesManagementTabState extends ConsumerState<ServicesManagementTab> {
   }
 
   void _filterServices() {
+    if (_services.isEmpty) return;
+    
     setState(() {
       _filteredServices = _services.where((service) {
         final matchesCategory = _selectedCategory == null || service.category == _selectedCategory;
@@ -58,6 +64,31 @@ class _ServicesManagementTabState extends ConsumerState<ServicesManagementTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Add error boundary
+    if (_services.isEmpty && !_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                'No services available',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              Text(
+                'Please check if data has been properly loaded',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -192,7 +223,9 @@ class _ServicesManagementTabState extends ConsumerState<ServicesManagementTab> {
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  Row(
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
                                     children: [
                                       Chip(
                                         label: Text(service.category.name.toUpperCase()),
@@ -202,7 +235,6 @@ class _ServicesManagementTabState extends ConsumerState<ServicesManagementTab> {
                                           fontSize: 12,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
                                       if (service.duration != null)
                                         Chip(
                                           label: Text('${service.duration} min'),

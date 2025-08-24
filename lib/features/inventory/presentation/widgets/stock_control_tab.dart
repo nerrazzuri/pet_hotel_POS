@@ -64,6 +64,18 @@ class _StockControlTabState extends ConsumerState<StockControlTab> {
         ),
         Row(
           children: [
+            // Stock Movement History Button
+            OutlinedButton.icon(
+              onPressed: () => _showStockMovementHistory(context),
+              icon: const Icon(Icons.history),
+              label: const Text('Movement History'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.purple[600],
+                side: BorderSide(color: Colors.purple[600]!),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Stock Adjustment Button
             ElevatedButton.icon(
               onPressed: () => _showStockAdjustmentDialog(context),
               icon: const Icon(Icons.tune),
@@ -75,6 +87,7 @@ class _StockControlTabState extends ConsumerState<StockControlTab> {
               ),
             ),
             const SizedBox(width: 12),
+            // Stock Transfer Button
             ElevatedButton.icon(
               onPressed: () => _showStockTransferDialog(context),
               icon: const Icon(Icons.swap_horiz),
@@ -157,42 +170,249 @@ class _StockControlTabState extends ConsumerState<StockControlTab> {
   }
 
   Widget _buildOverviewTab() {
-    return Consumer(
-      builder: (context, ref, child) {
-        final analyticsAsync = ref.watch(inventoryAnalyticsProvider);
-        final productsAsync = ref.watch(productsProvider);
-
-        return Column(
+    final analyticsAsync = ref.watch(inventoryAnalyticsProvider);
+    
+    return analyticsAsync.when(
+      data: (analytics) => SingleChildScrollView(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Analytics Cards
-            analyticsAsync.when(
-              data: (analytics) => _buildAnalyticsCards(analytics),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Text('Error: $error'),
-            ),
-            
+            // Key Metrics Cards
+            _buildKeyMetricsCards(analytics),
             const SizedBox(height: 24),
             
-            // Recent Products
+            // Stock Level Chart
+            _buildStockLevelChart(analytics),
+            const SizedBox(height: 24),
+            
+            // Recent Activity
+            _buildRecentActivity(),
+          ],
+        ),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const Center(child: Text('Error loading analytics')),
+    );
+  }
+
+  Widget _buildKeyMetricsCards(Map<String, dynamic> analytics) {
+    final cards = [
+      {
+        'title': 'Total Products',
+        'value': '${analytics['totalProducts'] ?? 0}',
+        'icon': Icons.inventory,
+        'color': Colors.blue,
+        'trend': '+5%',
+        'trendColor': Colors.green,
+      },
+      {
+        'title': 'Total Stock Value',
+        'value': '\$${(analytics['totalValue'] ?? 0.0).toStringAsFixed(2)}',
+        'icon': Icons.attach_money,
+        'color': Colors.green,
+        'trend': '+12%',
+        'trendColor': Colors.green,
+      },
+      {
+        'title': 'Low Stock Items',
+        'value': '${analytics['lowStockProducts'] ?? 0}',
+        'icon': Icons.warning,
+        'color': Colors.orange,
+        'trend': '-2',
+        'trendColor': Colors.red,
+      },
+      {
+        'title': 'Out of Stock',
+        'value': '${analytics['outOfStockProducts'] ?? 0}',
+        'icon': Icons.remove_shopping_cart,
+        'color': Colors.red,
+        'trend': '-1',
+        'trendColor': Colors.green,
+      },
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1.5,
+      ),
+      itemCount: cards.length,
+      itemBuilder: (context, index) {
+        final card = cards[index];
+        return _buildMetricCard(card);
+      },
+    );
+  }
+
+  Widget _buildMetricCard(Map<String, dynamic> card) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  card['icon'] as IconData,
+                  color: card['color'] as Color,
+                  size: 24,
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (card['trendColor'] as Color).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    card['trend'] as String,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: card['trendColor'] as Color,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Text(
-              'Recent Products',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              card['value'] as String,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: card['color'] as Color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              card['title'] as String,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStockLevelChart(Map<String, dynamic> analytics) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Stock Level Overview',
+              style: TextStyle(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            
-            Expanded(
-              child: productsAsync.when(
-                data: (products) => _buildProductsList(products.take(10).toList()),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Text('Error: $error'),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStockLevelIndicator(
+                    'In Stock',
+                    analytics['totalItems'] ?? 0,
+                    Colors.green,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStockLevelIndicator(
+                    'Low Stock',
+                    analytics['lowStockProducts'] ?? 0,
+                    Colors.orange,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStockLevelIndicator(
+                    'Out of Stock',
+                    analytics['outOfStockProducts'] ?? 0,
+                    Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStockLevelIndicator(String label, int value, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Center(
+            child: Text(
+              '$value',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentActivity() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Recent Stock Movements',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // TODO: Implement recent activity list
+            const Center(
+              child: Text(
+                'Recent activity tracking coming soon!',
+                style: TextStyle(color: Colors.grey),
               ),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -754,6 +974,13 @@ class _StockControlTabState extends ConsumerState<StockControlTab> {
     showDialog(
       context: context,
       builder: (context) => ProductDetailsDialog(product: product),
+    );
+  }
+
+  void _showStockMovementHistory(BuildContext context) {
+    // TODO: Implement navigation to Stock Movement History screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Stock Movement History coming soon!')),
     );
   }
 }
