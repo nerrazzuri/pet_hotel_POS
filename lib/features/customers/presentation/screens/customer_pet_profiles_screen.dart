@@ -41,7 +41,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 8, vsync: this); // Increased tabs
+    _tabController = TabController(length: 7, vsync: this); // 7 tabs after removing Pets tab
   }
   
   @override
@@ -83,19 +83,22 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
         ],
         bottom: TabBar(
           controller: _tabController,
-          isScrollable: true,
-          indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
+          indicatorColor: const Color(0xFFD2B48C), // Light brown color
+          indicatorPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 20),
+          isScrollable: false,
           tabs: const [
             Tab(text: 'Overview', icon: Icon(Icons.dashboard)),
             Tab(text: 'Customers', icon: Icon(Icons.people)),
-            Tab(text: 'Pets', icon: Icon(Icons.pets)),
-            Tab(text: 'Vaccinations', icon: Icon(Icons.medical_services)),
+            Tab(text: 'Vaccinations', icon: Icon(Icons.vaccines)),
             Tab(text: 'Waivers & Incidents', icon: Icon(Icons.description)),
             Tab(text: 'Analytics', icon: Icon(Icons.analytics)),
             Tab(text: 'Loyalty', icon: Icon(Icons.card_giftcard)),
             Tab(text: 'Communication', icon: Icon(Icons.message)),
+            Tab(text: 'Payment History', icon: Icon(Icons.payment)),
+            Tab(text: 'Product Management', icon: Icon(Icons.inventory)),
           ],
         ),
       ),
@@ -111,12 +114,13 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
               children: [
                 _buildOverviewTab(),
                 _buildCustomersTab(),
-                _buildPetsTab(),
                 _buildVaccinationsTab(),
                 _buildWaiversIncidentsTab(),
                 _buildAnalyticsTab(),
                 _buildLoyaltyTab(),
                 _buildCommunicationTab(),
+                _buildPaymentHistoryTab(),
+                _buildProductManagementTab(),
               ],
             ),
           ),
@@ -212,7 +216,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
               ),
             ),
             
-            // Customer list
+            // Customer list - 5 cards per row
             Expanded(
               child: customers.isEmpty
                   ? const Center(
@@ -233,7 +237,14 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
                         ],
                       ),
                     )
-                  : ListView.builder(
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 5,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.8,
+                      ),
                       itemCount: customers.length,
                       itemBuilder: (context, index) {
                         final customer = customers[index];
@@ -369,123 +380,28 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   }
 
   Widget _buildVaccinationsTab() {
-    return FutureBuilder<List<Vaccination>>(
-      future: _vaccinationDao.getAll(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text('Error loading vaccinations: ${snapshot.error}'),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => setState(() {}),
-                  child: const Text('Retry'),
-                ),
-              ],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Pet Vaccinations',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-          );
-        }
-        
-        final vaccinations = snapshot.data ?? [];
-        
-        return Column(
-          children: [
-            // Header with actions
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Vaccination Management',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '${vaccinations.length} vaccination records',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () => _showScheduleVaccinationDialog(),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Schedule Vaccination'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  OutlinedButton.icon(
-                    onPressed: _showVaccinationReminders,
-                    icon: const Icon(Icons.notifications),
-                    label: const Text('Due Soon'),
-                  ),
-                ],
-              ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Vaccination management functionality will be implemented here.',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
             ),
-            
-            // Vaccination list
-            Expanded(
-              child: vaccinations.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.medical_services_outlined, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text(
-                            'No vaccination records found',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Schedule your first vaccination to get started',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: vaccinations.length,
-                      itemBuilder: (context, index) {
-                        final vaccination = vaccinations[index];
-                        return _buildVaccinationCard(vaccination);
-                      },
-                    ),
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 
@@ -497,10 +413,13 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
           // Tab bar
           Container(
             color: Colors.white,
-            child: const TabBar(
-              labelColor: Colors.black87,
+            child: TabBar(
+              labelColor: Colors.white,
               unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.blue,
+              indicatorColor: const Color(0xFFD2B48C), // Light brown color
+              indicatorPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 20),
+              isScrollable: false,
               tabs: [
                 Tab(text: 'Waivers', icon: Icon(Icons.description)),
                 Tab(text: 'Incidents', icon: Icon(Icons.warning)),
@@ -956,77 +875,105 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
 
   // Enhanced Overview Cards
   Widget _buildEnhancedOverviewCards(Map<String, dynamic> data) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 4,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.1,
+    return Column(
       children: [
-        _buildEnhancedStatCard(
-          'Total Customers',
-          '${data['totalCustomers'] ?? 0}',
-          Icons.people,
-          Colors.blue,
-          subtitle: '${data['activeCustomers'] ?? 0} active',
-          trend: data['customerGrowth'] ?? 0.0,
+        // Key metrics in 1 row
+        Row(
+          children: [
+            Expanded(
+              child: _buildEnhancedStatCard(
+                'Total Customers',
+                '${data['totalCustomers'] ?? 0}',
+                Icons.people,
+                Colors.blue,
+                subtitle: '${data['activeCustomers'] ?? 0} active',
+                trend: data['customerGrowth'] ?? 0.0,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildEnhancedStatCard(
+                'Total Pets',
+                '${data['totalPets'] ?? 0}',
+                Icons.pets,
+                Colors.green,
+                subtitle: '${data['activePets'] ?? 0} active',
+                trend: data['petGrowth'] ?? 0.0,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildEnhancedStatCard(
+                'Active Customers',
+                '${data['activeCustomers'] ?? 0}',
+                Icons.person,
+                Colors.teal,
+                subtitle: '${data['activeCustomers'] ?? 0} active',
+                trend: data['customerGrowth'] ?? 0.0,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildEnhancedStatCard(
+                'VIP Customers',
+                '${data['loyaltyMembers'] ?? 0}',
+                Icons.card_giftcard,
+                Colors.purple,
+                subtitle: '${data['loyaltyPercentage'] ?? 0}% of total',
+                trend: data['loyaltyGrowth'] ?? 0.0,
+              ),
+            ),
+          ],
         ),
-        _buildEnhancedStatCard(
-          'Total Pets',
-          '${data['totalPets'] ?? 0}',
-          Icons.pets,
-          Colors.green,
-          subtitle: '${data['activePets'] ?? 0} active',
-          trend: data['petGrowth'] ?? 0.0,
-        ),
-        _buildEnhancedStatCard(
-          'Expiring Vaccinations',
-          '${data['expiringVaccinations'] ?? 0}',
-          Icons.warning,
-          Colors.orange,
-          subtitle: 'Next 30 days',
-          trend: data['vaccinationTrend'] ?? 0.0,
-        ),
-        _buildEnhancedStatCard(
-          'Pending Waivers',
-          '${data['pendingWaivers'] ?? 0}',
-          Icons.description,
-          Colors.purple,
-          subtitle: 'Requires attention',
-          trend: data['waiverTrend'] ?? 0.0,
-        ),
-        _buildEnhancedStatCard(
-          'Open Incidents',
-          '${data['openIncidents'] ?? 0}',
-          Icons.report_problem,
-          Colors.red,
-          subtitle: 'Needs resolution',
-          trend: data['incidentTrend'] ?? 0.0,
-        ),
-        _buildEnhancedStatCard(
-          'Loyalty Members',
-          '${data['loyaltyMembers'] ?? 0}',
-          Icons.card_giftcard,
-          Colors.teal,
-          subtitle: '${data['loyaltyPercentage'] ?? 0}% of total',
-          trend: data['loyaltyGrowth'] ?? 0.0,
-        ),
-        _buildEnhancedStatCard(
-          'New This Month',
-          '${data['newCustomersThisMonth'] ?? 0}',
-          Icons.person_add,
-          Colors.indigo,
-          subtitle: 'Customer acquisition',
-          trend: data['acquisitionTrend'] ?? 0.0,
-        ),
-        _buildEnhancedStatCard(
-          'Avg. Customer Value',
-          '\$${data['averageCustomerValue']?.toStringAsFixed(2) ?? '0.00'}',
-          Icons.attach_money,
-          Colors.amber,
-          subtitle: 'Lifetime value',
-          trend: data['valueTrend'] ?? 0.0,
+        const SizedBox(height: 24),
+        
+        // Additional metrics in 1 row
+        Row(
+          children: [
+            Expanded(
+              child: _buildEnhancedStatCard(
+                'Expiring Vaccinations',
+                '${data['expiringVaccinations'] ?? 0}',
+                Icons.warning,
+                Colors.orange,
+                subtitle: 'Next 30 days',
+                trend: data['vaccinationTrend'] ?? 0.0,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildEnhancedStatCard(
+                'Pending Waivers',
+                '${data['pendingWaivers'] ?? 0}',
+                Icons.description,
+                Colors.purple,
+                subtitle: 'Requires attention',
+                trend: data['waiverTrend'] ?? 0.0,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildEnhancedStatCard(
+                'Open Incidents',
+                '${data['openIncidents'] ?? 0}',
+                Icons.report_problem,
+                Colors.red,
+                subtitle: 'Needs resolution',
+                trend: data['incidentTrend'] ?? 0.0,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildEnhancedStatCard(
+                'New This Month',
+                '${data['newCustomersThisMonth'] ?? 0}',
+                Icons.person_add,
+                Colors.indigo,
+                subtitle: 'Customer acquisition',
+                trend: data['acquisitionTrend'] ?? 0.0,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -1145,45 +1092,61 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
               ],
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
+            // Quick actions in 1 row
+            Row(
               children: [
-                _buildQuickActionButton(
-                  'Add Customer',
-                  Icons.person_add,
-                  Colors.blue,
-                  () => _showAddCustomerDialog(),
+                Expanded(
+                  child: _buildQuickActionButton(
+                    'Add Customer',
+                    Icons.person_add,
+                    Colors.blue,
+                    () => _showAddCustomerDialog(),
+                  ),
                 ),
-                _buildQuickActionButton(
-                  'Add Pet',
-                  Icons.pets,
-                  Colors.green,
-                  () => _showAddPetDialog(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildQuickActionButton(
+                    'Add Pet',
+                    Icons.pets,
+                    Colors.green,
+                    () => _showAddPetDialog(),
+                  ),
                 ),
-                _buildQuickActionButton(
-                  'Schedule Vaccination',
-                  Icons.medical_services,
-                  Colors.orange,
-                  () => _showScheduleVaccinationDialog(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildQuickActionButton(
+                    'Schedule Vaccination',
+                    Icons.medical_services,
+                    Colors.orange,
+                    () => _showScheduleVaccinationDialog(),
+                  ),
                 ),
-                _buildQuickActionButton(
-                  'Send Reminder',
-                  Icons.notifications,
-                  Colors.purple,
-                  () => _showSendReminderDialog(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildQuickActionButton(
+                    'Send Reminder',
+                    Icons.notifications,
+                    Colors.purple,
+                    () => _showSendReminderDialog(),
+                  ),
                 ),
-                _buildQuickActionButton(
-                  'Generate Report',
-                  Icons.assessment,
-                  Colors.teal,
-                  () => _generateCustomerReport(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildQuickActionButton(
+                    'Generate Report',
+                    Icons.assessment,
+                    Colors.teal,
+                    () => _generateCustomerReport(),
+                  ),
                 ),
-                _buildQuickActionButton(
-                  'Bulk Import',
-                  Icons.upload_file,
-                  Colors.indigo,
-                  () => _showBulkImportDialog(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildQuickActionButton(
+                    'Bulk Import',
+                    Icons.upload_file,
+                    Colors.indigo,
+                    () => _showBulkImportDialog(),
+                  ),
                 ),
               ],
             ),
@@ -1205,11 +1168,11 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: color.withOpacity(0.3)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
+            Icon(icon, size: 24, color: color),
+            const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
@@ -1468,6 +1431,99 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
 
   String _formatDate(DateTime date) {
     return '${date.month}/${date.day}/${date.year}';
+  }
+
+  // Pet helper methods
+  Color _getPetTypeColor(PetType type) {
+    switch (type) {
+      case PetType.cat:
+        return Colors.orange;
+      case PetType.dog:
+        return Colors.blue;
+      case PetType.bird:
+        return Colors.green;
+      case PetType.rabbit:
+        return Colors.pink;
+      case PetType.hamster:
+        return Colors.brown;
+      case PetType.guineaPig:
+        return Colors.purple;
+      case PetType.ferret:
+        return Colors.indigo;
+      case PetType.other:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getPetTypeIcon(PetType type) {
+    switch (type) {
+      case PetType.dog:
+        return Icons.pets;
+      case PetType.cat:
+        return Icons.pets;
+      case PetType.bird:
+        return Icons.flutter_dash;
+      case PetType.guineaPig:
+        return Icons.pets;
+      case PetType.rabbit:
+        return Icons.pets;
+      case PetType.hamster:
+        return Icons.pets;
+      case PetType.ferret:
+        return Icons.pets;
+      case PetType.other:
+        return Icons.pets;
+    }
+  }
+
+  void _showAllPetsDialog(Customer customer, List<Pet> pets) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${customer.firstName} ${customer.lastName}\'s Pets'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: pets.length,
+            itemBuilder: (context, index) {
+              final pet = pets[index];
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: _getPetTypeColor(pet.type).withOpacity(0.2),
+                  child: Icon(
+                    _getPetTypeIcon(pet.type),
+                    color: _getPetTypeColor(pet.type),
+                  ),
+                ),
+                title: Text(pet.name),
+                subtitle: Text('${pet.type.name} • ${pet.breed ?? 'Unknown'}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showEditPetDialog(pet);
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showAddPetDialog();
+            },
+            child: const Text('Add Pet'),
+          ),
+        ],
+      ),
+    );
   }
 
   // Enhanced data methods
@@ -2709,123 +2765,249 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
     );
   }
 
-  // Customer card widget
+  // Customer card widget - Compact with pets integrated
   Widget _buildCustomerCard(Customer customer) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ExpansionTile(
-        leading: CircleAvatar(
-          backgroundColor: _getCustomerStatusColor(customer.status),
-          child: Text(
-            '${customer.firstName[0]}${customer.lastName[0]}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+      elevation: 4,
+      child: InkWell(
+        onTap: () => _showCustomerDetailsDialog(customer),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Colors.grey.shade50,
+              ],
             ),
           ),
-        ),
-        title: Text(
-          '${customer.firstName} ${customer.lastName}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(customer.email),
-            Text(customer.phoneNumber),
-            Row(
-              children: [
-                _buildStatusChip(customer.status),
-                const SizedBox(width: 8),
-                if (customer.loyaltyTier != null)
-                  _buildLoyaltyChip(customer.loyaltyTier!),
-              ],
-            ),
-          ],
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Customer details
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDetailRow('Address', customer.address),
-                          _buildDetailRow('Registration Date', 
-                            _formatDate(customer.createdAt)),
-                          _buildDetailRow('Last Visit', 
-                            customer.lastVisitDate != null ? _formatDate(customer.lastVisitDate!) : 'Never'),
-                          _buildDetailRow('Total Spent', 
-                            '\$${customer.totalSpent?.toStringAsFixed(2) ?? '0.00'}'),
-                        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Customer header
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: _getCustomerStatusColor(customer.status),
+                    radius: 20,
+                    child: Text(
+                      '${customer.firstName[0]}${customer.lastName[0]}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildDetailRow('Source', customer.source.displayName),
-                          _buildDetailRow('Birth Date', 
-                            customer.dateOfBirth != null ? _formatDate(customer.dateOfBirth!) : 'Unknown'),
-                          _buildDetailRow('Notes', customer.notes ?? 'No notes'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Emergency contacts
-                if (customer.emergencyContacts != null && customer.emergencyContacts!.isNotEmpty) ...[
-                  const Text(
-                    'Emergency Contacts:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
-                  ...customer.emergencyContacts!.map((contact) => 
-                    _buildEmergencyContact(contact)),
-                  const SizedBox(height: 16),
-                ],
-                
-                // Action buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () => _showEditCustomerDialog(customer),
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit'),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${customer.firstName} ${customer.lastName}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          customer.email,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                    OutlinedButton.icon(
-                      onPressed: () => _showCustomerDetailsDialog(customer),
-                      icon: const Icon(Icons.info),
-                      label: const Text('Details'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => _showDeleteCustomerDialog(customer),
-                      icon: const Icon(Icons.delete),
-                      label: const Text('Delete'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'edit':
+                          _showEditCustomerDialog(customer);
+                          break;
+                        case 'details':
+                          _showCustomerDetailsDialog(customer);
+                          break;
+                        case 'delete':
+                          _showDeleteCustomerDialog(customer);
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 16),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const PopupMenuItem(
+                        value: 'details',
+                        child: Row(
+                          children: [
+                            Icon(Icons.info, size: 16),
+                            SizedBox(width: 8),
+                            Text('Details'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 16),
+                            SizedBox(width: 8),
+                            Text('Delete'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Status and loyalty chips
+              Row(
+                children: [
+                  _buildStatusChip(customer.status),
+                  const SizedBox(width: 8),
+                  if (customer.loyaltyTier != null)
+                    _buildLoyaltyChip(customer.loyaltyTier!),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Customer info
+              _buildCompactDetailRow('Phone', customer.phoneNumber),
+              _buildCompactDetailRow('Source', customer.source.displayName),
+              _buildCompactDetailRow('Total Spent', '\$${customer.totalSpent?.toStringAsFixed(2) ?? '0.00'}'),
+              
+              const SizedBox(height: 12),
+              
+              // Pets section
+              FutureBuilder<List<Pet>>(
+                future: _petDao.getByCustomerId(customer.id),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(
+                      height: 40,
+                      child: const Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  
+                  final pets = snapshot.data ?? [];
+                  
+                  if (pets.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.pets, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 8),
+                          Text(
+                            'No pets registered',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.pets, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Pets (${pets.length})',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...pets.take(2).map((pet) => _buildPetMiniCard(pet)),
+                      if (pets.length > 2)
+                        TextButton(
+                          onPressed: () => _showAllPetsDialog(customer, pets),
+                          child: Text(
+                            '+${pets.length - 2} more pets',
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildCompactDetailRow(String label, String? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 60,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+                fontSize: 11,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value ?? 'N/A',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildDetailRow(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -2853,6 +3035,61 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
     );
   }
   
+  Widget _buildPetMiniCard(Pet pet) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: _getPetTypeColor(pet.type).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _getPetTypeColor(pet.type).withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _getPetTypeColor(pet.type).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              _getPetTypeIcon(pet.type),
+              size: 14,
+              color: _getPetTypeColor(pet.type),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pet.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '${pet.type.name} • ${pet.breed ?? 'Unknown'}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 10,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmergencyContact(EmergencyContact contact) {
     return Container(
       padding: const EdgeInsets.all(8),
@@ -3062,47 +3299,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
     );
   }
   
-  Color _getPetTypeColor(PetType type) {
-    switch (type) {
-      case PetType.cat:
-        return Colors.orange;
-      case PetType.dog:
-        return Colors.blue;
-      case PetType.bird:
-        return Colors.green;
-      case PetType.rabbit:
-        return Colors.brown;
-      case PetType.hamster:
-        return Colors.grey;
-      case PetType.guineaPig:
-        return Colors.pink;
-      case PetType.ferret:
-        return Colors.purple;
-      case PetType.other:
-        return Colors.grey[600]!;
-    }
-  }
-  
-  IconData _getPetTypeIcon(PetType type) {
-    switch (type) {
-      case PetType.cat:
-        return Icons.pets;
-      case PetType.dog:
-        return Icons.pets;
-      case PetType.bird:
-        return Icons.flutter_dash;
-      case PetType.rabbit:
-        return Icons.pets;
-      case PetType.hamster:
-        return Icons.pets;
-      case PetType.guineaPig:
-        return Icons.pets;
-      case PetType.ferret:
-        return Icons.pets;
-      case PetType.other:
-        return Icons.pets;
-    }
-  }
+
   
   Color _getTemperamentColor(TemperamentType temperament) {
     switch (temperament) {
@@ -3737,16 +3934,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showCustomerDetailsDialog(Customer customer) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Customer Details: ${customer.firstName} ${customer.lastName}'),
-        content: const Text('Detailed customer view coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      builder: (context) => _CustomerDetailsDialog(customer: customer),
     );
   }
 
@@ -4604,6 +4792,1297 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductManagementTab() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Product Management',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text('Product management functionality will be implemented here.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentHistoryTab() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Payment History',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text('Payment history functionality will be implemented here.'),
+        ],
+      ),
+    );
+  }
+}
+
+// Comprehensive Customer Details Dialog
+class _CustomerDetailsDialog extends ConsumerStatefulWidget {
+  final Customer customer;
+
+  const _CustomerDetailsDialog({required this.customer});
+
+  @override
+  ConsumerState<_CustomerDetailsDialog> createState() => _CustomerDetailsDialogState();
+}
+
+class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
+    with SingleTickerProviderStateMixin {
+  final PetDao _petDao = PetDao();
+  late TabController _tabController;
+  late Future<List<Pet>> _petsFuture;
+  late Future<List<Map<String, dynamic>>> _transactionsFuture;
+  late Future<List<Map<String, dynamic>>> _paymentsFuture;
+  late Future<List<Map<String, dynamic>>> _servicesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 9, vsync: this);
+    _petsFuture = _petDao.getByCustomerId(widget.customer.id);
+    _transactionsFuture = _getMockTransactions();
+    _paymentsFuture = _getMockPayments();
+    _servicesFuture = _getMockServices();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        width: 1200,
+        height: 800,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // Header
+            _buildHeader(),
+            const SizedBox(height: 24),
+            
+            // Tab Bar
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  tabBarTheme: const TabBarThemeData(
+                    labelColor: Colors.black,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: Color(0xFFD2B48C),
+                  ),
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: false,
+                  labelColor: Colors.black, // Black text for active tabs
+                  unselectedLabelColor: Colors.grey[700], // Dark grey text for inactive tabs
+                  indicatorColor: const Color(0xFFD2B48C), // Light brown color
+                  indicatorPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                  tabs: const [
+                    Tab(icon: Icon(Icons.person), text: 'Profile'),
+                    Tab(icon: Icon(Icons.history), text: 'Transactions'),
+                    Tab(icon: Icon(Icons.payment), text: 'Payments'),
+                    Tab(icon: Icon(Icons.medical_services), text: 'Services'),
+                    Tab(icon: Icon(Icons.pets), text: 'Pets'),
+                    Tab(icon: Icon(Icons.vaccines), text: 'Vaccinations'),
+                    Tab(icon: Icon(Icons.card_giftcard), text: 'Loyalty'),
+                    Tab(icon: Icon(Icons.message), text: 'Communication'),
+                    Tab(icon: Icon(Icons.analytics), text: 'Analytics'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Tab Content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildProfileTab(),
+                  _buildTransactionsTab(),
+                  _buildPaymentsTab(),
+                  _buildServicesTab(),
+                  _buildPetsTab(),
+                  _buildVaccinationsTab(),
+                  _buildLoyaltyTab(),
+                  _buildCommunicationTab(),
+                  _buildAnalyticsTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        // Customer Avatar
+        CircleAvatar(
+          backgroundColor: _getCustomerStatusColor(widget.customer.status),
+          radius: 30,
+          child: Text(
+            '${widget.customer.firstName[0]}${widget.customer.lastName[0]}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+            ),
+          ),
+        ),
+        const SizedBox(width: 20),
+        
+        // Customer Info
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${widget.customer.firstName} ${widget.customer.lastName}',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Customer ID: ${widget.customer.id}',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildStatusChip(widget.customer.status),
+                  const SizedBox(width: 12),
+                  if (widget.customer.loyaltyTier != null)
+                    _buildLoyaltyChip(widget.customer.loyaltyTier!),
+                ],
+              ),
+            ],
+          ),
+        ),
+        
+        // Quick Actions
+        Column(
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _showEditCustomerDialog(widget.customer),
+              icon: const Icon(Icons.edit),
+              label: const Text('Edit Profile'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _scheduleAppointment(),
+              icon: const Icon(Icons.calendar_today),
+              label: const Text('Schedule'),
+            ),
+          ],
+        ),
+        
+        // Close Button
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close),
+          tooltip: 'Close',
+        ),
+      ],
+    );
+  }
+
+  // Profile Tab
+  Widget _buildProfileTab() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Personal Information'),
+          const SizedBox(height: 16),
+          
+          // Basic Info Grid
+          Row(
+            children: [
+              Expanded(child: _buildInfoCard('Email', widget.customer.email, Icons.email)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('Phone', widget.customer.phoneNumber, Icons.phone)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(child: _buildInfoCard('Address', widget.customer.address ?? 'No address', Icons.location_on)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('Source', widget.customer.source.displayName, Icons.source)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(child: _buildInfoCard('Registration Date', _formatDate(widget.customer.createdAt), Icons.calendar_today)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('Last Visit', widget.customer.lastVisitDate != null ? _formatDate(widget.customer.lastVisitDate!) : 'Never', Icons.visibility)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(child: _buildInfoCard('Date of Birth', widget.customer.dateOfBirth != null ? _formatDate(widget.customer.dateOfBirth!) : 'Not specified', Icons.cake)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('Total Spent', '\$${widget.customer.totalSpent?.toStringAsFixed(2) ?? '0.00'}', Icons.attach_money)),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          _buildSectionTitle('Emergency Contacts'),
+          const SizedBox(height: 16),
+          
+          if (widget.customer.emergencyContacts != null && widget.customer.emergencyContacts!.isNotEmpty)
+            ...widget.customer.emergencyContacts!.map((contact) => _buildEmergencyContactCard(contact))
+          else
+            _buildInfoCard('No emergency contacts', 'Add emergency contacts for safety', Icons.warning),
+            
+          const SizedBox(height: 32),
+          _buildSectionTitle('Notes & Preferences'),
+          const SizedBox(height: 16),
+          
+          _buildInfoCard('Notes', widget.customer.notes ?? 'No notes available', Icons.note),
+        ],
+      ),
+    );
+  }
+
+  // Pets Tab
+  Widget _buildPetsTab() {
+    return Container(
+      color: Colors.grey[50], // Debug background color
+      child: FutureBuilder<List<Pet>>(
+        future: _petsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}', style: TextStyle(color: Colors.red[700])));
+          }
+          
+          final pets = snapshot.data ?? [];
+          
+          if (pets.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.pets, size: 64, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text('No pets registered', style: TextStyle(fontSize: 18, color: Colors.grey[700])),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => _showAddPetDialog(),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Pet'),
+                  ),
+                ],
+              ),
+            );
+          }
+          
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                // Header with add button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('${pets.length} Pets', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    ElevatedButton.icon(
+                      onPressed: () => _showAddPetDialog(),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Pet'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Pets grid
+                SizedBox(
+                  height: 400,
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.8,
+                    ),
+                    itemCount: pets.length,
+                    itemBuilder: (context, index) => _buildDetailedPetCard(pets[index]),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // Transactions Tab
+  Widget _buildTransactionsTab() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _transactionsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final transactions = snapshot.data ?? [];
+        
+        return Column(
+          children: [
+            // Summary cards
+            Row(
+              children: [
+                Expanded(child: _buildSummaryCard('Total Transactions', transactions.length.toString(), Icons.receipt, Colors.blue)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('Total Value', '\$${_calculateTotalTransactions(transactions).toStringAsFixed(2)}', Icons.attach_money, Colors.green)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('This Month', '${_getThisMonthTransactions(transactions).length}', Icons.calendar_month, Colors.orange)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Transactions list
+            Expanded(
+              child: transactions.isEmpty
+                  ? Center(child: Text('No transactions found', style: TextStyle(color: Colors.grey[700])))
+                  : ListView.builder(
+                      itemCount: transactions.length,
+                      itemBuilder: (context, index) => _buildTransactionCard(transactions[index]),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Payments Tab
+  Widget _buildPaymentsTab() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _paymentsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final payments = snapshot.data ?? [];
+        
+        return Column(
+          children: [
+            // Summary cards
+            Row(
+              children: [
+                Expanded(child: _buildSummaryCard('Total Payments', payments.length.toString(), Icons.payment, Colors.green)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('Total Amount', '\$${_calculateTotalPayments(payments).toStringAsFixed(2)}', Icons.attach_money, Colors.blue)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('Payment Methods', '${_getUniquePaymentMethods(payments).length}', Icons.credit_card, Colors.purple)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Payments list
+            Expanded(
+              child: payments.isEmpty
+                  ? const Center(child: Text('No payments found'))
+                  : ListView.builder(
+                      itemCount: payments.length,
+                      itemBuilder: (context, index) => _buildPaymentCard(payments[index]),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Services Tab
+  Widget _buildServicesTab() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _servicesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final payments = snapshot.data ?? [];
+        
+        return Column(
+          children: [
+            // Summary cards
+            Row(
+              children: [
+                Expanded(child: _buildSummaryCard('Total Services', payments.length.toString(), Icons.medical_services, Colors.teal)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('This Month', '${_getThisMonthServices(payments).length}', Icons.calendar_month, Colors.orange)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('Upcoming', '${_getUpcomingServices(payments).length}', Icons.schedule, Colors.blue)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Services list
+            Expanded(
+              child: payments.isEmpty
+                  ? const Center(child: Text('No services found'))
+                  : ListView.builder(
+                      itemCount: payments.length,
+                      itemBuilder: (context, index) => _buildServiceCard(payments[index]),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Loyalty Tab
+  Widget _buildLoyaltyTab() {
+    final loyaltyTier = widget.customer.loyaltyTier;
+    
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Current Status
+          _buildSectionTitle('Current Loyalty Status'),
+          const SizedBox(height: 16),
+          
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: loyaltyTier == LoyaltyTier.platinum ? [Colors.purple, Colors.indigo] :
+                        loyaltyTier == LoyaltyTier.gold ? [Colors.amber, Colors.orange] :
+                        loyaltyTier == LoyaltyTier.silver ? [Colors.grey, Colors.blueGrey] :
+                        [Colors.brown, Colors.orange],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  loyaltyTier == LoyaltyTier.platinum ? Icons.diamond :
+                  loyaltyTier == LoyaltyTier.gold ? Icons.star :
+                  loyaltyTier == LoyaltyTier.silver ? Icons.star_border :
+                  Icons.favorite,
+                  color: Colors.white,
+                  size: 48,
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        loyaltyTier?.name.toUpperCase() ?? 'No Tier',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Join our loyalty program to earn rewards!',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 32),
+          _buildSectionTitle('Loyalty Benefits'),
+          const SizedBox(height: 16),
+          
+          _buildLoyaltyBenefitsGrid(loyaltyTier),
+          
+          const SizedBox(height: 32),
+          _buildSectionTitle('Points & Rewards'),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(child: _buildInfoCard('Current Points', '1,250', Icons.star)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('Points This Month', '150', Icons.trending_up)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('Next Tier', '250 more points', Icons.arrow_upward)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Communication Tab
+  Widget _buildCommunicationTab() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Communication Preferences'),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(child: _buildInfoCard('Email Notifications', 'Enabled', Icons.email)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('SMS Notifications', 'Enabled', Icons.sms)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('Marketing Emails', 'Opted In', Icons.campaign)),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          _buildSectionTitle('Recent Communications'),
+          const SizedBox(height: 16),
+          
+          _buildCommunicationHistory(),
+        ],
+      ),
+    );
+  }
+
+  // Analytics Tab
+  Widget _buildAnalyticsTab() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Customer Value Metrics'),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(child: _buildInfoCard('Customer Lifetime Value', '\$${widget.customer.totalSpent?.toStringAsFixed(2) ?? '0.00'}', Icons.trending_up)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('Average Transaction', '\$${_calculateAverageTransaction()}', Icons.analytics)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildInfoCard('Visit Frequency', '2.3 visits/month', Icons.calendar_today)),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          _buildSectionTitle('Service Utilization'),
+          const SizedBox(height: 16),
+          
+          _buildServiceUtilizationChart(),
+        ],
+      ),
+    );
+  }
+
+  // Helper Methods
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Colors.teal,
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.teal, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailedPetCard(Pet pet) {
+    return Card(
+      elevation: 4,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Pet header
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _getPetTypeColor(pet.type).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    _getPetTypeIcon(pet.type),
+                    color: _getPetTypeColor(pet.type),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        pet.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        '${pet.type.name} • ${pet.breed ?? 'Unknown'}',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Pet details
+            _buildPetDetailRow('Age', '${pet.age ?? 'Unknown'} years'),
+            _buildPetDetailRow('Weight', '${pet.weight ?? 'Unknown'} ${pet.weightUnit ?? ''}'),
+            _buildPetDetailRow('Gender', pet.gender.name),
+            _buildPetDetailRow('Size', pet.size.name),
+            
+            const SizedBox(height: 16),
+            
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _showPetDetails(pet),
+                    child: const Text('Details'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _showPetVaccinations(pet),
+                    child: const Text('Vaccinations'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPetDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 60,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(fontSize: 12, color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionCard(Map<String, dynamic> transaction) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.blue.withOpacity(0.1),
+          child: Icon(Icons.receipt, color: Colors.blue),
+        ),
+        title: Text(
+          transaction['description'] ?? 'Transaction',
+          style: TextStyle(color: Colors.black87),
+        ),
+        subtitle: Text(
+          '${transaction['date']} • ${transaction['amount']}',
+          style: TextStyle(color: Colors.grey[700]),
+        ),
+        trailing: Text(
+          '\$${transaction['amount']}',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.green,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentCard(Map<String, dynamic> payment) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.green.withOpacity(0.1),
+          child: Icon(Icons.payment, color: Colors.green),
+        ),
+        title: Text(
+          payment['method'] ?? 'Payment',
+          style: TextStyle(color: Colors.black87),
+        ),
+        subtitle: Text(
+          '${payment['date']} • ${payment['status']}',
+          style: TextStyle(color: Colors.grey[700]),
+        ),
+        trailing: Text(
+          '\$${payment['amount']}',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.green,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServiceCard(Map<String, dynamic> service) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.teal.withOpacity(0.1),
+          child: Icon(Icons.medical_services, color: Colors.teal),
+        ),
+        title: Text(
+          service['type'] ?? 'Service',
+          style: TextStyle(color: Colors.black87),
+        ),
+        subtitle: Text(
+          '${service['date']} • ${service['staff']}',
+          style: TextStyle(color: Colors.grey[700]),
+        ),
+        trailing: Text(
+          '\$${service['cost']}',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.teal,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoyaltyBenefitsGrid(LoyaltyTier? tier) {
+    final benefits = ['Free grooming every 3 months', '10% discount on services', 'Priority booking'];
+    
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 3,
+      ),
+      itemCount: benefits.length,
+      itemBuilder: (context, index) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                benefits[index],
+                style: TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmergencyContactCard(EmergencyContact contact) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            contact.isPrimary == true ? Icons.star : Icons.person,
+            color: contact.isPrimary == true ? Colors.amber : Colors.grey,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  contact.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text('${contact.relationship} - ${contact.phoneNumber}'),
+                if (contact.email != null) Text(contact.email!),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommunicationHistory() {
+    final communications = [
+      {'type': 'Email', 'date': '2024-01-15', 'subject': 'Appointment Reminder'},
+      {'type': 'SMS', 'date': '2024-01-14', 'subject': 'Service Confirmation'},
+      {'type': 'Email', 'date': '2024-01-10', 'subject': 'Welcome Message'},
+    ];
+    
+    return Column(
+      children: communications.map((comm) => Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: Icon(
+            comm['type'] == 'Email' ? Icons.email : Icons.sms,
+            color: comm['type'] == 'Email' ? Colors.blue : Colors.green,
+          ),
+          title: Text(
+            comm['subject'] ?? '',
+            style: TextStyle(color: Colors.black87),
+          ),
+          subtitle: Text(
+            '${comm['type']} • ${comm['date']}',
+            style: TextStyle(color: Colors.grey[700]),
+          ),
+          trailing: Icon(Icons.check_circle, color: Colors.green, size: 16),
+        ),
+      )).toList(),
+    );
+  }
+
+  Widget _buildServiceUtilizationChart() {
+    return Container(
+      height: 200,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+              child: Center(
+          child: Text(
+            'Service Utilization Chart\n(Chart implementation would go here)',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey[700]),
+          ),
+        ),
+    );
+  }
+
+  // Mock data methods
+  Future<List<Map<String, dynamic>>> _getMockTransactions() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return [
+      {'description': 'Grooming Service', 'date': '2024-01-15', 'amount': 45.00},
+      {'description': 'Boarding (2 nights)', 'date': '2024-01-10', 'amount': 120.00},
+      {'description': 'Vaccination', 'date': '2024-01-05', 'amount': 35.00},
+      {'description': 'Pet Food', 'date': '2024-01-01', 'amount': 28.50},
+    ];
+  }
+
+  Future<List<Map<String, dynamic>>> _getMockPayments() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return [
+      {'method': 'Credit Card', 'date': '2024-01-15', 'amount': 45.00, 'status': 'Completed'},
+      {'method': 'Cash', 'date': '2024-01-10', 'amount': 120.00, 'status': 'Completed'},
+      {'method': 'Credit Card', 'date': '2024-01-05', 'amount': 35.00, 'status': 'Completed'},
+      {'method': 'Credit Card', 'date': '2024-01-01', 'amount': 28.50, 'status': 'Completed'},
+    ];
+  }
+
+  Future<List<Map<String, dynamic>>> _getMockServices() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return [
+      {'type': 'Grooming', 'date': '2024-01-15', 'staff': 'Sarah', 'cost': 45.00},
+      {'type': 'Boarding', 'date': '2024-01-10', 'staff': 'Mike', 'cost': 120.00},
+      {'type': 'Vaccination', 'date': '2024-01-05', 'staff': 'Dr. Johnson', 'cost': 35.00},
+      {'type': 'Consultation', 'date': '2024-01-01', 'staff': 'Dr. Johnson', 'cost': 28.50},
+    ];
+  }
+
+  // Calculation methods
+  double _calculateTotalTransactions(List<Map<String, dynamic>> transactions) {
+    return transactions.fold(0.0, (sum, t) => sum + (t['amount'] ?? 0.0));
+  }
+
+  List<Map<String, dynamic>> _getThisMonthTransactions(List<Map<String, dynamic>> transactions) {
+    return transactions.where((t) => t['date']?.startsWith('2024-01') == true).toList();
+  }
+
+  double _calculateTotalPayments(List<Map<String, dynamic>> payments) {
+    return payments.fold(0.0, (sum, p) => sum + (p['amount'] ?? 0.0));
+  }
+
+  List<String> _getUniquePaymentMethods(List<Map<String, dynamic>> payments) {
+    return payments.map((p) => p['method'] ?? '').where((m) => m.isNotEmpty).toSet().toList().cast<String>();
+  }
+
+  List<Map<String, dynamic>> _getThisMonthServices(List<Map<String, dynamic>> services) {
+    return services.where((s) => s['date']?.startsWith('2024-01') == true).toList();
+  }
+
+  List<Map<String, dynamic>> _getUpcomingServices(List<Map<String, dynamic>> services) {
+    return services.where((s) => s['date']?.compareTo('2024-01-20') > 0).toList();
+  }
+
+  String _calculateAverageTransaction() {
+    final total = widget.customer.totalSpent ?? 0.0;
+    final transactions = 4; // Mock count
+    return transactions > 0 ? (total / transactions).toStringAsFixed(2) : '0.00';
+  }
+
+  // Action methods
+  void _showAddPetDialog() {
+    // Implementation for adding pet
+  }
+
+  void _showPetDetails(Pet pet) {
+    // Implementation for showing pet details
+  }
+
+  void _showPetVaccinations(Pet pet) {
+    // Implementation for showing pet vaccinations
+  }
+
+  void _scheduleAppointment() {
+    // Implementation for scheduling appointment
+  }
+
+  void _showEditCustomerDialog(Customer customer) {
+    // Implementation for editing customer
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  Color _getCustomerStatusColor(CustomerStatus status) {
+    switch (status) {
+      case CustomerStatus.active:
+        return Colors.green;
+      case CustomerStatus.inactive:
+        return Colors.grey;
+      case CustomerStatus.blacklisted:
+        return Colors.red;
+      case CustomerStatus.pendingVerification:
+        return Colors.orange;
+      case CustomerStatus.suspended:
+        return Colors.red;
+    }
+  }
+
+  Widget _buildStatusChip(CustomerStatus status) {
+    return Chip(
+      label: Text(
+        status.name,
+        style: const TextStyle(fontSize: 12, color: Colors.white),
+      ),
+      backgroundColor: _getCustomerStatusColor(status),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    );
+  }
+
+  Widget _buildLoyaltyChip(LoyaltyTier tier) {
+    return Chip(
+      label: Text(
+        tier.name.toUpperCase(),
+        style: const TextStyle(fontSize: 12, color: Colors.white),
+      ),
+      backgroundColor: Colors.amber,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    );
+  }
+
+  Color _getPetTypeColor(PetType type) {
+    switch (type) {
+      case PetType.dog:
+        return Colors.brown;
+      case PetType.cat:
+        return Colors.orange;
+      case PetType.bird:
+        return Colors.blue;
+      case PetType.guineaPig:
+        return Colors.pink;
+      case PetType.rabbit:
+        return Colors.grey;
+      case PetType.hamster:
+        return Colors.amber;
+      case PetType.guineaPig:
+        return Colors.pink;
+      case PetType.ferret:
+        return Colors.indigo;
+      case PetType.other:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getPetTypeIcon(PetType type) {
+    switch (type) {
+      case PetType.dog:
+        return Icons.pets;
+      case PetType.cat:
+        return Icons.pets;
+      case PetType.bird:
+        return Icons.flutter_dash;
+      case PetType.guineaPig:
+        return Icons.pets;
+      case PetType.rabbit:
+        return Icons.pets;
+      case PetType.hamster:
+        return Icons.pets;
+      case PetType.ferret:
+        return Icons.pets;
+      case PetType.other:
+        return Icons.pets;
+    }
+  }
+
+  Widget _buildVaccinationsTab() {
+    return Container(
+      color: Colors.blue[50], // Debug background color
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Pet Vaccinations',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (widget.customer.pets?.isEmpty ?? true)
+            Center(
+              child: Text(
+                'No pets found for this customer.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[700],
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 400,
+              child: ListView.builder(
+                itemCount: widget.customer.pets?.length ?? 0,
+                itemBuilder: (context, index) {
+                  final pet = widget.customer.pets![index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ExpansionTile(
+                      title: Text(
+                        pet.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${pet.type.name} • ${pet.breed ?? 'Unknown breed'}',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Vaccination Records',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Vaccination records will be displayed here.',
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );

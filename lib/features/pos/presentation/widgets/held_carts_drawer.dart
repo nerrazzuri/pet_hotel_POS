@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cat_hotel_pos/features/pos/presentation/providers/pos_providers.dart';
+import 'package:cat_hotel_pos/features/pos/domain/entities/pos_cart.dart';
 
 class HeldCartsDrawer extends ConsumerWidget {
   const HeldCartsDrawer({super.key});
@@ -88,6 +89,8 @@ class HeldCartsDrawer extends ConsumerWidget {
                       cart: cart,
                       onRecall: () {
                         ref.read(currentCartProvider.notifier).recallHeldCart(cart.id);
+                        // Invalidate the held carts provider to refresh the UI
+                        ref.invalidate(heldCartsProvider);
                         Navigator.of(context).pop();
                         
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -191,6 +194,8 @@ class HeldCartsDrawer extends ConsumerWidget {
             onPressed: () {
               // Delete held cart functionality
               ref.read(currentCartProvider.notifier).deleteHeldCart(cartId);
+              // Invalidate the held carts provider to refresh the UI
+              ref.invalidate(heldCartsProvider);
               Navigator.of(context).pop();
               
               ScaffoldMessenger.of(context).showSnackBar(
@@ -213,7 +218,7 @@ class HeldCartsDrawer extends ConsumerWidget {
 }
 
 class _HeldCartCard extends StatelessWidget {
-  final dynamic cart;
+  final POSCart cart;
   final VoidCallback onRecall;
   final VoidCallback onDelete;
 
@@ -226,7 +231,7 @@ class _HeldCartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final itemCount = cart.items?.length ?? 0;
+    final itemCount = cart.items.length;
     final totalAmount = cart.totalAmount ?? 0.0;
     final heldAt = cart.heldAt ?? DateTime.now();
     

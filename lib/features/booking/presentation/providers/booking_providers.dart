@@ -21,7 +21,7 @@ final bookingServiceProvider = Provider<BookingService>((ref) {
 });
 
 final bookingDaoProvider = Provider<BookingDao>((ref) => BookingDao());
-final roomDaoProvider = Provider<RoomDao>((ref) => RoomDao());
+final roomDaoProvider = Provider<RoomDao>((ref) => RoomDao.instance);
 final customerDaoProvider = Provider<CustomerDao>((ref) => CustomerDao());
 final petDaoProvider = Provider<PetDao>((ref) => PetDao());
 

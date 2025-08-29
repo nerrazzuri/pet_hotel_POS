@@ -22,6 +22,34 @@ class SecureStorageService {
   static Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
   }
+
+  /// Generic write method for session service
+  static Future<void> write(String key, String value) async {
+    if (kIsWeb) {
+      _prefs?.setString(key, _encryptForWeb(value));
+    } else {
+      await _secureStorage.write(key: key, value: value);
+    }
+  }
+
+  /// Generic read method for session service
+  static Future<String?> read(String key) async {
+    if (kIsWeb) {
+      final encrypted = _prefs?.getString(key);
+      return encrypted != null ? _decryptForWeb(encrypted) : null;
+    } else {
+      return await _secureStorage.read(key: key);
+    }
+  }
+
+  /// Generic delete method for session service
+  static Future<void> delete(String key) async {
+    if (kIsWeb) {
+      _prefs?.remove(key);
+    } else {
+      await _secureStorage.delete(key: key);
+    }
+  }
   
   /// Store access token securely
   static Future<void> storeAccessToken(String token) async {

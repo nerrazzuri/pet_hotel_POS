@@ -7,6 +7,18 @@ import 'package:cat_hotel_pos/features/booking/domain/entities/room.dart';
 class RoomDao {
   static final Map<String, Room> _rooms = {};
   static bool _initialized = false;
+  static RoomDao? _instance;
+  
+  // Private constructor for singleton pattern
+  RoomDao._() {
+    _initialize();
+  }
+  
+  // Singleton instance getter
+  static RoomDao get instance {
+    _instance ??= RoomDao._();
+    return _instance!;
+  }
   // TODO: Uncomment when implementing UUID generation
   // static final Uuid _uuid = const Uuid();
 
@@ -393,6 +405,18 @@ class RoomDao {
       _rooms[roomId] = room.copyWith(
         lastCleanedAt: lastCleaned,
         nextCleaningDue: nextCleaning,
+      );
+    }
+  }
+
+  Future<void> updateCurrentOccupant(String roomId, String? occupantId, String? occupantName) async {
+    _initialize();
+    final room = _rooms[roomId];
+    if (room != null) {
+      _rooms[roomId] = room.copyWith(
+        currentOccupantId: occupantId,
+        currentOccupantName: occupantName,
+        status: occupantId != null ? RoomStatus.occupied : RoomStatus.available,
       );
     }
   }

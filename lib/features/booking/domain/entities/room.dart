@@ -14,6 +14,29 @@ enum RoomType {
   playroom
 }
 
+extension RoomTypeExtension on RoomType {
+  String get displayName {
+    switch (this) {
+      case RoomType.standard:
+        return 'Standard';
+      case RoomType.deluxe:
+        return 'Deluxe';
+      case RoomType.vip:
+        return 'VIP';
+      case RoomType.isolation:
+        return 'Isolation';
+      case RoomType.medical:
+        return 'Medical';
+      case RoomType.family:
+        return 'Family';
+      case RoomType.outdoor:
+        return 'Outdoor';
+      case RoomType.playroom:
+        return 'Playroom';
+    }
+  }
+}
+
 enum RoomStatus {
   available,
   occupied,

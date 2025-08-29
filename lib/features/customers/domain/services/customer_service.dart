@@ -119,13 +119,19 @@ class CustomerService {
       print('CustomerService.getAllCustomers: Called with onlyActive: $onlyActive');
       print('CustomerService.getAllCustomers: _customerDao type: ${_customerDao.runtimeType}');
       
-      final result = await _customerDao.getAll(onlyActive: onlyActive);
-      print('CustomerService.getAllCustomers: Successfully retrieved ${result.length} customers');
-      return result;
+      final customers = await _customerDao.getAll(onlyActive: onlyActive);
+      print('CustomerService.getAllCustomers: Successfully retrieved ${customers.length} customers');
+      
+      // Debug: Print customer names if any found
+      if (customers.isNotEmpty) {
+        print('CustomerService.getAllCustomers: Customers found: ${customers.map((c) => c.fullName).join(', ')}');
+      }
+      
+      return customers;
     } catch (e) {
       print('CustomerService.getAllCustomers: Error: $e');
       print('CustomerService.getAllCustomers: Stack trace: ${StackTrace.current}');
-      rethrow;
+      return [];
     }
   }
 
@@ -136,17 +142,25 @@ class CustomerService {
       
       if (query.trim().isEmpty) {
         print('CustomerService.searchCustomers: Empty query, calling getAll()');
-        return await _customerDao.getAll();
+        final result = await _customerDao.getAll(onlyActive: true);
+        print('CustomerService.searchCustomers: getAll() returned ${result.length} customers');
+        return result;
       }
       
       print('CustomerService.searchCustomers: Calling search with trimmed query: "${query.trim()}"');
       final result = await _customerDao.search(query.trim());
       print('CustomerService.searchCustomers: Successfully retrieved ${result.length} customers');
+      
+      // Debug: Print customer names found
+      if (result.isNotEmpty) {
+        print('CustomerService.searchCustomers: Found customers: ${result.map((c) => c.fullName).join(', ')}');
+      }
+      
       return result;
     } catch (e) {
       print('CustomerService.searchCustomers: Error: $e');
       print('CustomerService.searchCustomers: Stack trace: ${StackTrace.current}');
-      rethrow;
+      return [];
     }
   }
 

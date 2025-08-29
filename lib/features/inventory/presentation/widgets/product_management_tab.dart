@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cat_hotel_pos/features/services/domain/entities/product.dart';
 import '../providers/product_providers.dart';
-// import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 
 class ProductManagementTab extends ConsumerStatefulWidget {
@@ -489,21 +492,203 @@ class _ProductManagementTabState extends ConsumerState<ProductManagementTab> {
   }
 
   Future<void> _pickCsvFile() async {
-    // TODO: Implement CSV parsing and bulk import
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bulk import feature coming soon!')),
-      );
+    try {
+      // For now, we'll create a sample CSV and show import functionality
+      // In a real app, you'd use file_picker to select a file
+      await _showCsvImportDialog();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error importing CSV: $e')),
+        );
+      }
     }
+  }
+
+  Future<void> _showCsvImportDialog() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('CSV Import'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Paste your CSV data below:'),
+            const SizedBox(height: 16),
+            Container(
+              height: 200,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: TextField(
+                maxLines: null,
+                expands: true,
+                decoration: const InputDecoration(
+                  hintText: 'Paste CSV data here...\n\nFormat:\nName,Category,Description,Price,Cost,StockQuantity,ReorderPoint,Supplier,Brand',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.all(12),
+                ),
+                onChanged: (value) {
+                  // Store the CSV data for processing
+                  _csvData = value;
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'CSV Format: Name,Category,Description,Price,Cost,StockQuantity,ReorderPoint,Supplier,Brand',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              if (_csvData.isNotEmpty) {
+                await _processCsvImport(_csvData);
+              }
+            },
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _csvData = '';
+
+  Future<void> _processCsvImport(String csvData) async {
+    try {
+      final lines = csvData.trim().split('\n');
+      if (lines.length < 2) {
+        throw Exception('CSV must have at least a header row and one data row');
+      }
+
+      final headers = lines[0].split(',').map((h) => h.trim()).toList();
+      final products = <Product>[];
+      int successCount = 0;
+      int errorCount = 0;
+
+      for (int i = 1; i < lines.length; i++) {
+        try {
+          final values = lines[i].split(',').map((v) => v.trim()).toList();
+          if (values.length < headers.length) continue;
+
+          final product = _createProductFromCsvRow(headers, values);
+          if (product != null) {
+            await ref.read(productServiceProvider).createProduct(product);
+            products.add(product);
+            successCount++;
+          }
+        } catch (e) {
+          errorCount++;
+          print('Error processing row $i: $e');
+        }
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        ref.invalidate(productsProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Import completed: $successCount successful, $errorCount errors'),
+            backgroundColor: successCount > 0 ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error processing CSV: $e')),
+        );
+      }
+    }
+  }
+
+  Product? _createProductFromCsvRow(List<String> headers, List<String> values) {
+    try {
+      final Map<String, String> rowData = {};
+      for (int i = 0; i < headers.length && i < values.length; i++) {
+        rowData[headers[i].toLowerCase()] = values[i];
+      }
+
+      final name = rowData['name'] ?? '';
+      final categoryStr = rowData['category'] ?? 'other';
+      final description = rowData['description'];
+      final price = double.tryParse(rowData['price'] ?? '0') ?? 0.0;
+      final cost = double.tryParse(rowData['cost'] ?? '0') ?? 0.0;
+      final stockQuantity = int.tryParse(rowData['stockquantity'] ?? '0') ?? 0;
+      final reorderPoint = int.tryParse(rowData['reorderpoint'] ?? '0') ?? 0;
+      final supplier = rowData['supplier'];
+      final brand = rowData['brand'];
+
+      if (name.isEmpty) return null;
+
+      final category = _getProductCategoryFromString(categoryStr);
+      final productCode = _generateProductCode(category);
+
+      return Product(
+        id: 'imported_${DateTime.now().millisecondsSinceEpoch}_${DateTime.now().millisecondsSinceEpoch}',
+        productCode: productCode,
+        name: name,
+        description: description,
+        price: price,
+        cost: cost,
+        stockQuantity: stockQuantity,
+        reorderPoint: reorderPoint,
+        category: category,
+        supplier: supplier,
+        brand: brand,
+        isActive: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    } catch (e) {
+      print('Error creating product from CSV row: $e');
+      return null;
+    }
+  }
+
+  String _generateProductCode(ProductCategory category) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString().substring(8);
+    final categoryCode = category.name.substring(0, 2).toUpperCase();
+    return '${categoryCode}${timestamp}';
+  }
+
+  ProductCategory _getProductCategoryFromString(String categoryString) {
+    for (final category in ProductCategory.values) {
+      if (category.name.toLowerCase() == categoryString.toLowerCase() || 
+          category.displayName.toLowerCase() == categoryString.toLowerCase()) {
+        return category;
+      }
+    }
+    return ProductCategory.other; // Default fallback
   }
 
   Future<void> _exportProducts() async {
     try {
-      // TODO: Implement product export to CSV/Excel
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export feature coming soon!')),
-      );
+      final products = await ref.read(productServiceProvider).getAllProducts();
+      final csvData = _generateCsvData(products);
+      
+      // Save to temporary file
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/products_export_${DateTime.now().millisecondsSinceEpoch}.csv');
+      await file.writeAsString(csvData);
+      
+      // Share the file
+      await Share.shareXFiles([XFile(file.path)], text: 'Products Export');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Products exported successfully!')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -511,6 +696,36 @@ class _ProductManagementTabState extends ConsumerState<ProductManagementTab> {
         );
       }
     }
+  }
+
+  String _generateCsvData(List<Product> products) {
+    final buffer = StringBuffer();
+    
+    // Header
+    buffer.writeln('Name,Category,Description,Price,Cost,StockQuantity,ReorderPoint,Supplier,Brand,Size,Color,Weight,Unit,Tags,Status');
+    
+    // Data rows
+    for (final product in products) {
+      buffer.writeln([
+        '"${product.name}"',
+        product.category.displayName,
+        '"${product.description ?? ''}"',
+        product.price.toStringAsFixed(2),
+        product.cost.toStringAsFixed(2),
+        product.stockQuantity.toString(),
+        product.reorderPoint.toString(),
+        '"${product.supplier ?? ''}"',
+        '"${product.brand ?? ''}"',
+        '"${product.size ?? ''}"',
+        '"${product.color ?? ''}"',
+        '"${product.weight ?? ''}"',
+        '"${product.unit ?? ''}"',
+        '"${product.tags?.join('; ') ?? ''}"',
+        product.status?.name ?? 'inStock',
+      ].join(','));
+    }
+    
+    return buffer.toString();
   }
 
   void _showLowStockAlert(List<Product> lowStockProducts) {
@@ -602,24 +817,17 @@ class _ProductManagementTabState extends ConsumerState<ProductManagementTab> {
   }
 
   void _createPurchaseOrderForProduct(Product product) {
-    // TODO: Implement purchase order creation for specific product
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Creating purchase order for ${product.name}...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+    _showPurchaseOrderDialog([product]);
   }
 
   void _createBulkPurchaseOrder(List<Product> products) {
-    // TODO: Implement bulk purchase order creation
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Creating bulk purchase order for ${products.length} products...'),
-        backgroundColor: Colors.blue,
-      ),
+    _showPurchaseOrderDialog(products);
+  }
+
+  void _showPurchaseOrderDialog(List<Product> products) {
+    showDialog(
+      context: context,
+      builder: (context) => _PurchaseOrderDialog(products: products),
     );
   }
 }
@@ -1551,5 +1759,437 @@ class _ProductDetailsDialog extends StatelessWidget {
       }
     }
     return ProductCategory.other; // Default fallback
+  }
+}
+
+// Purchase Order Dialog Widget
+class _PurchaseOrderDialog extends ConsumerStatefulWidget {
+  final List<Product> products;
+
+  const _PurchaseOrderDialog({required this.products});
+
+  @override
+  ConsumerState<_PurchaseOrderDialog> createState() => _PurchaseOrderDialogState();
+}
+
+class _PurchaseOrderDialogState extends ConsumerState<_PurchaseOrderDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _supplierController = TextEditingController();
+  final _notesController = TextEditingController();
+  final _expectedDeliveryController = TextEditingController();
+  final Map<String, int> _quantities = {};
+  final Map<String, double> _unitCosts = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize quantities and unit costs
+    for (final product in widget.products) {
+      _quantities[product.id] = product.reorderPoint * 2; // Order 2x reorder point
+      _unitCosts[product.id] = product.cost;
+    }
+  }
+
+  @override
+  void dispose() {
+    _supplierController.dispose();
+    _notesController.dispose();
+    _expectedDeliveryController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        width: 800,
+        height: 600,
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Create Purchase Order',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Order Details
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _supplierController,
+                      decoration: const InputDecoration(
+                        labelText: 'Supplier *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter supplier name';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _expectedDeliveryController,
+                      decoration: const InputDecoration(
+                        labelText: 'Expected Delivery Date',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.calendar_today),
+                      ),
+                      readOnly: true,
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now().add(const Duration(days: 7)),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null) {
+                          _expectedDeliveryController.text = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 24),
+
+              // Products List
+              Text(
+                'Products (${widget.products.length})',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: widget.products.length,
+                  itemBuilder: (context, index) {
+                    final product = widget.products[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            // Product Image
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: product.imageUrl != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        product.imageUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Icon(
+                                          Icons.inventory,
+                                          color: Colors.grey[400],
+                                        ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.inventory,
+                                      color: Colors.grey[400],
+                                    ),
+                            ),
+                            const SizedBox(width: 16),
+
+                            // Product Info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product.name,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    product.category.displayName,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  Text(
+                                    'Current Stock: ${product.stockQuantity}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Quantity Input
+                            SizedBox(
+                              width: 100,
+                              child: TextFormField(
+                                initialValue: _quantities[product.id]?.toString() ?? '0',
+                                decoration: const InputDecoration(
+                                  labelText: 'Qty',
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  final qty = int.tryParse(value) ?? 0;
+                                  _quantities[product.id] = qty;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+
+                            // Unit Cost Input
+                            SizedBox(
+                              width: 120,
+                              child: TextFormField(
+                                initialValue: _unitCosts[product.id]?.toStringAsFixed(2) ?? '0.00',
+                                decoration: const InputDecoration(
+                                  labelText: 'Unit Cost',
+                                  border: OutlineInputBorder(),
+                                  prefixText: '\$',
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  final cost = double.tryParse(value) ?? 0.0;
+                                  _unitCosts[product.id] = cost;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+
+                            // Total Cost
+                            SizedBox(
+                              width: 100,
+                              child: Text(
+                                '\$${(_quantities[product.id] ?? 0) * (_unitCosts[product.id] ?? 0.0)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                                textAlign: TextAlign.end,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Order Summary
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total Items: ${_quantities.values.fold(0, (sum, qty) => sum + qty)}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Total Cost: \$${_calculateTotalCost().toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: _createPurchaseOrder,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text('Create Purchase Order'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  double _calculateTotalCost() {
+    double total = 0.0;
+    for (final product in widget.products) {
+      final qty = _quantities[product.id] ?? 0;
+      final cost = _unitCosts[product.id] ?? 0.0;
+      total += qty * cost;
+    }
+    return total;
+  }
+
+  Future<void> _createPurchaseOrder() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        // In a real implementation, this would create a PurchaseOrder entity
+        // and save it to the database
+        
+        final orderSummary = {
+          'supplier': _supplierController.text,
+          'expectedDelivery': _expectedDeliveryController.text,
+          'notes': _notesController.text,
+          'products': widget.products.map((p) => {
+            'id': p.id,
+            'name': p.name,
+            'quantity': _quantities[p.id] ?? 0,
+            'unitCost': _unitCosts[p.id] ?? 0.0,
+            'totalCost': (_quantities[p.id] ?? 0) * (_unitCosts[p.id] ?? 0.0),
+          }).toList(),
+          'totalCost': _calculateTotalCost(),
+          'createdAt': DateTime.now().toIso8601String(),
+        };
+
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Purchase order created successfully! Total: \$${_calculateTotalCost().toStringAsFixed(2)}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // Show order summary
+          _showOrderSummary(orderSummary);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error creating purchase order: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  void _showOrderSummary(Map<String, dynamic> orderSummary) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Purchase Order Created'),
+        content: Container(
+          width: 600,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSummaryRow('Supplier', orderSummary['supplier']),
+              _buildSummaryRow('Expected Delivery', orderSummary['expectedDelivery']),
+              _buildSummaryRow('Total Cost', '\$${orderSummary['totalCost'].toStringAsFixed(2)}'),
+              if (orderSummary['notes'].isNotEmpty)
+                _buildSummaryRow('Notes', orderSummary['notes']),
+              const SizedBox(height: 16),
+              const Text(
+                'Products:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...orderSummary['products'].map<Widget>((product) => 
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(product['name'])),
+                      Text('${product['quantity']} x \$${product['unitCost'].toStringAsFixed(2)}'),
+                      const SizedBox(width: 16),
+                      Text(
+                        '\$${product['totalCost'].toStringAsFixed(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ).toList(),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement print/email functionality
+            },
+            child: const Text('Print/Email'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
   }
 }

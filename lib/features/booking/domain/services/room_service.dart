@@ -4,7 +4,7 @@ import 'package:cat_hotel_pos/features/auth/domain/services/audit_service.dart';
 import 'package:cat_hotel_pos/features/auth/domain/entities/audit_log.dart';
 
 class RoomService {
-  final RoomDao _roomDao = RoomDao();
+  final RoomDao _roomDao = RoomDao.instance;
   final AuditService? _auditService;
 
   RoomService(this._auditService);

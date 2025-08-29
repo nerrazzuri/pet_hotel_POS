@@ -56,6 +56,19 @@ enum PetGender {
   unknown,
 }
 
+extension PetGenderExtension on PetGender {
+  String get displayName {
+    switch (this) {
+      case PetGender.male:
+        return 'Male';
+      case PetGender.female:
+        return 'Female';
+      case PetGender.unknown:
+        return 'Unknown';
+    }
+  }
+}
+
 @JsonEnum()
 enum PetSize {
   @JsonValue('tiny')

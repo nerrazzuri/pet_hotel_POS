@@ -85,10 +85,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
           // Quick Actions Bar with improved styling
           _buildQuickActionsBar(),
           
-          // Customer Search Section
-          const CustomerSearchSection(),
-          
-          // Main content area
+          // Main content area with Customer Search and Product Grid on left, Cart/Payment on right
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -103,30 +100,43 @@ class _POSScreenState extends ConsumerState<POSScreen> {
               ),
               child: Row(
                 children: [
-                  // Left Side - Product Grid with enhanced styling
+                  // Left Side - Customer Search and Product Grid
                   Expanded(
                     flex: 6,
-                    child: Container(
-                      margin: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.shadow.withOpacity(0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 4),
+                    child: Column(
+                      children: [
+                        // Customer Search Section
+                        Container(
+                          margin: const EdgeInsets.only(left: 16, right: 16, top: 16),
+                          child: const CustomerSearchSection(),
+                        ),
+                        
+                        // Product Grid
+                        Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colorScheme.shadow.withOpacity(0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const ClipRRect(
+                              borderRadius: BorderRadius.all(Radius.circular(20)),
+                              child: ProductGrid(),
+                            ),
                           ),
-                        ],
-                      ),
-                      child: const ClipRRect(
-                        borderRadius: BorderRadius.all(Radius.circular(20)),
-                        child: ProductGrid(),
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                   
-                  // Right Side - Cart and Payment side by side
+                  // Right Side - Cart and Payment side by side (full height)
                   Expanded(
                     flex: 4,
                     child: Container(
@@ -146,13 +156,13 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                         borderRadius: const BorderRadius.all(Radius.circular(20)),
                         child: Row(
                           children: [
-                            // Cart Section
+                            // Cart Section (left half)
                             Expanded(
                               flex: 1,
                               child: CartSection(),
                             ),
                             
-                            // Payment Section
+                            // Payment Section (right half)
                             Expanded(
                               flex: 1,
                               child: PaymentSection(),
@@ -345,7 +355,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                     ),
                   ),
                   
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 24),
                   
                   // Back to Dashboard Button
                   Container(

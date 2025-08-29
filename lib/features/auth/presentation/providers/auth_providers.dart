@@ -7,6 +7,9 @@ import 'package:cat_hotel_pos/features/auth/domain/services/user_service.dart';
 import 'package:cat_hotel_pos/features/auth/domain/services/auth_service.dart';
 import 'package:cat_hotel_pos/features/auth/domain/services/secure_storage_service.dart';
 import 'package:cat_hotel_pos/features/auth/domain/services/biometric_auth_service.dart';
+import 'package:cat_hotel_pos/features/auth/domain/services/secure_auth_service.dart';
+import 'package:cat_hotel_pos/features/auth/domain/services/session_service.dart';
+import 'package:cat_hotel_pos/features/auth/domain/services/platform_auth_service.dart';
 
 // Service providers
 final permissionServiceProvider = Provider<PermissionService>((ref) {
@@ -167,18 +170,39 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     }
   }
   
-  /// Login user
-  Future<AuthResult> login(String username, String password, {bool rememberMe = false}) async {
+  /// Login user with platform-aware authentication
+  Future<PlatformAuthResult> login(String username, String password, {bool rememberMe = false}) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
       
-      final result = await _authService.authenticateUser(username, password);
+      final authResult = await PlatformAuthService.authenticateUser(username, password);
       
-      if (result.isSuccess && result.user != null && result.accessToken != null) {
-        // Store tokens securely
-        await SecureStorageService.storeAccessToken(result.accessToken!);
-        await SecureStorageService.storeRefreshToken(result.refreshToken!);
-        await SecureStorageService.storeUserData(result.user!.toJson());
+      if (authResult.success && authResult.user != null) {
+        print('Login successful for user: ${authResult.user!.username} on ${PlatformAuthService.platformName}');
+        
+        // Platform-specific session handling
+        String? sessionToken;
+        String? refreshToken;
+        
+        if (PlatformAuthService.supportsAdvancedSecurity) {
+          // Web: Create secure session
+          final sessionResult = await SessionService.createSession(authResult.user!);
+          if (sessionResult.success) {
+            sessionToken = sessionResult.sessionToken;
+            refreshToken = sessionResult.refreshToken;
+          }
+        } else {
+          // Desktop: Simple token simulation
+          sessionToken = 'desktop_session_${DateTime.now().millisecondsSinceEpoch}';
+        }
+        
+        // Store user data securely
+        await SecureStorageService.storeUserData({
+          'id': authResult.user!.id,
+          'username': authResult.user!.username,
+          'fullName': authResult.user!.fullName,
+          'role': authResult.user!.role.toString().split('.').last,
+        });
         await SecureStorageService.storeLastLogin(DateTime.now());
         await SecureStorageService.setRememberMe(rememberMe);
         
@@ -188,33 +212,34 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         
         // Update state
         state = state.copyWith(
-          user: result.user,
+          user: authResult.user,
           isAuthenticated: true,
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
+          accessToken: sessionToken,
+          refreshToken: refreshToken,
           isLoading: false,
           error: null,
         );
         
-        return result;
+        return PlatformAuthResult(success: true, user: authResult.user);
       } else {
         state = state.copyWith(
           isLoading: false,
-          error: result.errorMessage ?? 'Authentication failed',
+          error: authResult.error ?? 'Authentication failed',
         );
-        return result;
+        return PlatformAuthResult(success: false, error: authResult.error ?? 'Authentication failed');
       }
     } catch (e) {
+      print('Login error: $e');
       state = state.copyWith(
         isLoading: false,
         error: 'Login error: $e',
       );
-      return AuthResult.failure('Login error: $e');
+      return PlatformAuthResult(success: false, error: 'Login error: $e');
     }
   }
   
   /// Login with biometrics
-  Future<AuthResult> loginWithBiometrics() async {
+  Future<PlatformAuthResult> loginWithBiometrics() async {
     try {
       state = state.copyWith(isLoading: true, error: null);
       
@@ -224,7 +249,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
           isLoading: false,
           error: 'Biometric authentication failed',
         );
-        return AuthResult.failure('Biometric authentication failed');
+        return PlatformAuthResult(success: false, error: 'Biometric authentication failed');
       }
       
       // Get stored credentials
@@ -234,7 +259,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
           isLoading: false,
           error: 'No stored credentials found',
         );
-        return AuthResult.failure('No stored credentials found');
+        return PlatformAuthResult(success: false, error: 'No stored credentials found');
       }
       
       // Login with stored credentials
@@ -244,7 +269,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         isLoading: false,
         error: 'Biometric login error: $e',
       );
-      return AuthResult.failure('Biometric login error: $e');
+      return PlatformAuthResult(success: false, error: 'Biometric login error: $e');
     }
   }
   
@@ -452,3 +477,4 @@ enum AuthStatus {
   unauthenticated,
   error,
 }
+

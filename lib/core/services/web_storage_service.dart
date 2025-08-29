@@ -1,5 +1,6 @@
 
 import 'package:flutter/foundation.dart';
+import 'package:cat_hotel_pos/features/auth/domain/services/password_service.dart';
 
 // Conditional imports for web vs non-web platforms
 import 'web_storage_service_stub.dart' if (dart.library.html) 'web_storage_service_web.dart';
@@ -273,8 +274,8 @@ class WebStorageService {
       return;
     }
 
-    print('Creating default users...');
-    // Create default users
+    print('Creating default users with secure password hashing...');
+    // Create default users with properly hashed passwords
     final defaultUsers = [
       {
         'id': 'admin',
@@ -288,10 +289,12 @@ class WebStorageService {
         'department': 'IT',
         'position': 'System Administrator',
         'hireDate': DateTime.now().toIso8601String(),
-        'passwordHash': 'admin123', // Simplified for web demo
-        'salt': 'admin_salt_123',
+        'passwordHash': PasswordService.createPasswordHash('admin123'), // Properly hashed password
         'createdAt': DateTime.now().toIso8601String(),
         'lastLoginAt': DateTime.now().toIso8601String(),
+        'failedLoginAttempts': 0,
+        'lockoutUntil': null,
+        'lastPasswordChange': DateTime.now().toIso8601String(),
       },
       {
         'id': 'owner',
@@ -305,10 +308,12 @@ class WebStorageService {
         'department': 'Management',
         'position': 'Owner',
         'hireDate': DateTime.now().toIso8601String(),
-        'passwordHash': 'owner123', // Simplified for web demo
-        'salt': 'owner_salt_123',
+        'passwordHash': PasswordService.createPasswordHash('owner123'), // Properly hashed password
         'createdAt': DateTime.now().toIso8601String(),
         'lastLoginAt': DateTime.now().toIso8601String(),
+        'failedLoginAttempts': 0,
+        'lockoutUntil': null,
+        'lastPasswordChange': DateTime.now().toIso8601String(),
       },
       {
         'id': 'manager',
@@ -322,10 +327,12 @@ class WebStorageService {
         'department': 'Operations',
         'position': 'General Manager',
         'hireDate': DateTime.now().toIso8601String(),
-        'passwordHash': 'manager123', // Simplified for web demo
-        'salt': 'manager_salt_123',
+        'passwordHash': PasswordService.createPasswordHash('manager123'), // Properly hashed password
         'createdAt': DateTime.now().toIso8601String(),
         'lastLoginAt': DateTime.now().toIso8601String(),
+        'failedLoginAttempts': 0,
+        'lockoutUntil': null,
+        'lastPasswordChange': DateTime.now().toIso8601String(),
       },
       {
         'id': 'staff',
@@ -339,10 +346,12 @@ class WebStorageService {
         'department': 'Front Desk',
         'position': 'Customer Service Representative',
         'hireDate': DateTime.now().toIso8601String(),
-        'passwordHash': 'staff123', // Simplified for web demo
-        'salt': 'staff_salt_123',
+        'passwordHash': PasswordService.createPasswordHash('staff123'), // Properly hashed password
         'createdAt': DateTime.now().toIso8601String(),
         'lastLoginAt': DateTime.now().toIso8601String(),
+        'failedLoginAttempts': 0,
+        'lockoutUntil': null,
+        'lastPasswordChange': DateTime.now().toIso8601String(),
       },
     ];
 

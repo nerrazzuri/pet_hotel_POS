@@ -87,7 +87,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
                                     'Add items to cart to enable payment',
                                     style: TextStyle(
                                       color: Colors.grey[600],
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -142,7 +142,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
               child: Text(
                 'Payment Method',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.grey,
                 ),
@@ -265,6 +265,12 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         onPressed: () {
           setState(() {
             _selectedPaymentMethod = value;
+            
+            // Auto-fill amount for non-cash payments
+            if (value != 'cash') {
+              final cartTotal = ref.read(cartTotalProvider);
+              _amountPaidController.text = cartTotal.toStringAsFixed(2);
+            }
           });
         },
         style: ElevatedButton.styleFrom(
@@ -534,7 +540,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
             Text(
               'Amount Paid',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
               ),
@@ -597,7 +603,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
                   style: TextStyle(
                     color: Colors.green[700],
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 14,
                   ),
                 ),
               ],
@@ -796,7 +802,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
                     Text(
                       'Receipt #${transaction.receiptNumber}',
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -817,7 +823,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
               Text(
                 'Transaction Details',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.grey.shade800,
                 ),
@@ -946,10 +952,12 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
           ],
         ),
         const SizedBox(height: 8),
-        // Row 4: 0, Clear
+        // Row 4: 0, Exact, Clear
         Row(
           children: [
             Expanded(child: _buildCalculatorButton('0')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildCalculatorButton('=')),
             const SizedBox(width: 8),
             Expanded(child: _buildCalculatorButton('C')),
           ],
@@ -960,25 +968,38 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
 
   Widget _buildCalculatorButton(String text) {
     bool isClearButton = text == 'C';
+    bool isExactButton = text == '=';
     
     return SizedBox(
       height: 48,
       child: ElevatedButton(
         onPressed: () => _onCalculatorButtonPressed(text),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isClearButton ? Colors.red[100] : Colors.grey[100],
-          foregroundColor: isClearButton ? Colors.red[700] : Colors.grey[700],
+          backgroundColor: isClearButton 
+              ? Colors.red[100] 
+              : isExactButton 
+                  ? Colors.teal[100] 
+                  : Colors.grey[100],
+          foregroundColor: isClearButton 
+              ? Colors.red[700] 
+              : isExactButton 
+                  ? Colors.teal[700] 
+                  : Colors.grey[700],
           elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
         ),
         child: Text(
-          text,
+          isExactButton ? 'Exact' : text,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: isExactButton ? 12 : 18,
             fontWeight: FontWeight.bold,
-            color: isClearButton ? Colors.red[700] : Colors.grey[700],
+            color: isClearButton 
+                ? Colors.red[700] 
+                : isExactButton 
+                    ? Colors.teal[700] 
+                    : Colors.grey[700],
           ),
         ),
       ),
@@ -989,6 +1010,10 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
     if (button == 'C') {
       // Clear the amount
       _amountPaidController.clear();
+    } else if (button == '=') {
+      // Set exact amount (cart total)
+      final cartTotal = ref.read(cartTotalProvider);
+      _amountPaidController.text = cartTotal.toStringAsFixed(2);
     } else {
       // Add digit to amount with shifting logic
       String currentAmount = _amountPaidController.text;
