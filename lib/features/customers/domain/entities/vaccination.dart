@@ -30,6 +30,35 @@ enum VaccinationType {
   other,
 }
 
+extension VaccinationTypeExtension on VaccinationType {
+  String get displayName {
+    switch (this) {
+      case VaccinationType.core:
+        return 'Core Vaccination';
+      case VaccinationType.nonCore:
+        return 'Non-Core Vaccination';
+      case VaccinationType.rabies:
+        return 'Rabies';
+      case VaccinationType.bordetella:
+        return 'Bordetella';
+      case VaccinationType.dhpp:
+        return 'DHPP';
+      case VaccinationType.fvrcp:
+        return 'FVRCP';
+      case VaccinationType.lyme:
+        return 'Lyme Disease';
+      case VaccinationType.leptospirosis:
+        return 'Leptospirosis';
+      case VaccinationType.canineInfluenza:
+        return 'Canine Influenza';
+      case VaccinationType.felineLeukemia:
+        return 'Feline Leukemia';
+      case VaccinationType.other:
+        return 'Other';
+    }
+  }
+}
+
 @JsonEnum()
 enum VaccinationStatus {
   @JsonValue('up_to_date')
@@ -42,6 +71,23 @@ enum VaccinationStatus {
   overdue,
   @JsonValue('not_applicable')
   notApplicable,
+}
+
+extension VaccinationStatusExtension on VaccinationStatus {
+  String get displayName {
+    switch (this) {
+      case VaccinationStatus.upToDate:
+        return 'Up to Date';
+      case VaccinationStatus.expired:
+        return 'Expired';
+      case VaccinationStatus.dueSoon:
+        return 'Due Soon';
+      case VaccinationStatus.overdue:
+        return 'Overdue';
+      case VaccinationStatus.notApplicable:
+        return 'Not Applicable';
+    }
+  }
 }
 
 @freezed

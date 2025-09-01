@@ -116,71 +116,113 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
   }
 
   Widget _buildPeriodSelector() {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Analysis Period',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              children: [
-                FilterChip(
-                  label: const Text('Current Month'),
-                  selected: _selectedPeriod == 'current_month',
-                  onSelected: (selected) => _updatePeriod('current_month'),
-                  selectedColor: Colors.amber[100],
-                ),
-                FilterChip(
-                  label: const Text('Last Month'),
-                  selected: _selectedPeriod == 'last_month',
-                  onSelected: (selected) => _updatePeriod('last_month'),
-                  selectedColor: Colors.amber[100],
-                ),
-                FilterChip(
-                  label: const Text('Current Quarter'),
-                  selected: _selectedPeriod == 'current_quarter',
-                  onSelected: (selected) => _updatePeriod('current_quarter'),
-                  selectedColor: Colors.amber[100],
-                ),
-                FilterChip(
-                  label: const Text('Current Year'),
-                  selected: _selectedPeriod == 'current_year',
-                  onSelected: (selected) => _updatePeriod('current_year'),
-                  selectedColor: Colors.amber[100],
-                ),
-                FilterChip(
-                  label: const Text('Last Year'),
-                  selected: _selectedPeriod == 'last_year',
-                  onSelected: (selected) => _updatePeriod('last_year'),
-                  selectedColor: Colors.amber[100],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             Row(
               children: [
-                Text(
-                  'Period: ${_startDate.toString().split(' ')[0]} - ${_endDate.toString().split(' ')[0]}',
-                  style: TextStyle(color: Colors.grey[600]),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.calendar_today,
+                    color: Colors.amber[800],
+                    size: 20,
+                  ),
                 ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () => _showCustomDatePicker(context),
-                  icon: const Icon(Icons.calendar_today, size: 18),
-                  label: const Text('Custom Range'),
+                const SizedBox(width: 12),
+                Text(
+                  'Analysis Period',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildPeriodChip('Current Month', 'current_month'),
+                _buildPeriodChip('Last Month', 'last_month'),
+                _buildPeriodChip('Current Quarter', 'current_quarter'),
+                _buildPeriodChip('Current Year', 'current_year'),
+                _buildPeriodChip('Last Year', 'last_year'),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 20, color: Colors.grey[600]),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Period: ${_startDate.toString().split(' ')[0]} - ${_endDate.toString().split(' ')[0]}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _showCustomDatePicker(context),
+                    icon: const Icon(Icons.calendar_today, size: 16),
+                    label: const Text('Custom Range'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.amber[800],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPeriodChip(String label, String period) {
+    final isSelected = _selectedPeriod == period;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) => _updatePeriod(period),
+      selectedColor: Colors.amber[100],
+      checkmarkColor: Colors.amber[800],
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.amber[800] : Colors.grey[700],
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: isSelected ? Colors.amber[300]! : Colors.grey[300]!,
       ),
     );
   }
@@ -225,29 +267,46 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
   }
 
   Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      elevation: 2,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 24, color: color),
+            ),
+            const SizedBox(height: 12),
             Text(
               title,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: Colors.grey[600],
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               value,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
@@ -260,19 +319,49 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
   }
 
   Widget _buildFinancialOverview() {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Financial Overview',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.analytics,
+                    color: Colors.blue[800],
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Financial Overview',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
@@ -283,6 +372,7 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                     Colors.blue,
                   ),
                 ),
+                const SizedBox(width: 16),
                 Expanded(
                   child: _buildOverviewItem(
                     'Transactions',
@@ -291,6 +381,7 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                     Colors.orange,
                   ),
                 ),
+                const SizedBox(width: 16),
                 Expanded(
                   child: _buildOverviewItem(
                     'Active Budgets',
@@ -334,17 +425,48 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
 
   Widget _buildCategoryBreakdown() {
     if (_categoryBreakdown.isEmpty) {
-      return Card(
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(40),
           child: Center(
             child: Column(
               children: [
-                Icon(Icons.pie_chart_outline, size: 64, color: Colors.grey),
-                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.pie_chart_outline, size: 48, color: Colors.grey[400]),
+                ),
+                const SizedBox(height: 20),
                 Text(
                   'No category data available',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Category breakdown will appear here once you have transaction data',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -353,36 +475,70 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
       );
     }
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.pie_chart,
+                    color: Colors.green[800],
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Text(
                   'Expense Categories',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
                   ),
                 ),
                 const Spacer(),
-                TextButton(
+                TextButton.icon(
                   onPressed: () => _showDetailedCategoryReport(),
-                  child: const Text('View Full Report'),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View Full Report'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             ..._categoryBreakdown.take(5).map((category) => _buildCategoryRow(category)),
             if (_categoryBreakdown.length > 5)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
                 child: Center(
-                  child: TextButton(
+                  child: TextButton.icon(
                     onPressed: () => _showDetailedCategoryReport(),
-                    child: Text('View all ${_categoryBreakdown.length} categories'),
+                    icon: const Icon(Icons.expand_more, size: 16),
+                    label: Text('View all ${_categoryBreakdown.length} categories'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey[600],
+                    ),
                   ),
                 ),
               ),
@@ -438,57 +594,102 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
   }
 
   Widget _buildQuickActions() {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Quick Actions',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.purple[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.flash_on,
+                    color: Colors.purple[800],
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Quick Actions',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: _buildActionButton(
+                    icon: Icons.file_download,
+                    label: 'Export Report',
+                    color: Colors.blue,
                     onPressed: () => _exportFinancialReport(),
-                    icon: const Icon(Icons.file_download, size: 18),
-                    label: const Text('Export Report'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blue,
-                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: _buildActionButton(
+                    icon: Icons.timeline,
+                    label: 'Cash Flow',
+                    color: Colors.green,
                     onPressed: () => _generateCashFlowReport(),
-                    icon: const Icon(Icons.timeline, size: 18),
-                    label: const Text('Cash Flow'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.green,
-                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: _buildActionButton(
+                    icon: Icons.analytics,
+                    label: 'P&L Report',
+                    color: Colors.orange,
                     onPressed: () => _generateProfitLossReport(),
-                    icon: const Icon(Icons.analytics, size: 18),
-                    label: const Text('P&L Report'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.orange,
-                    ),
                   ),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 16),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(color: color.withOpacity(0.3)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12),
       ),
     );
   }

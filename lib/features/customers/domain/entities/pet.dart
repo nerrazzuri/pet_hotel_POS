@@ -83,6 +83,23 @@ enum PetSize {
   giant, // > 30kg
 }
 
+extension PetSizeExtension on PetSize {
+  String get displayName {
+    switch (this) {
+      case PetSize.tiny:
+        return 'Tiny (< 2kg)';
+      case PetSize.small:
+        return 'Small (2-5kg)';
+      case PetSize.medium:
+        return 'Medium (5-15kg)';
+      case PetSize.large:
+        return 'Large (15-30kg)';
+      case PetSize.giant:
+        return 'Giant (> 30kg)';
+    }
+  }
+}
+
 @JsonEnum()
 enum TemperamentType {
   @JsonValue('calm')
@@ -105,6 +122,33 @@ enum TemperamentType {
   territorial,
   @JsonValue('other')
   other,
+}
+
+extension TemperamentTypeExtension on TemperamentType {
+  String get displayName {
+    switch (this) {
+      case TemperamentType.calm:
+        return 'Calm';
+      case TemperamentType.playful:
+        return 'Playful';
+      case TemperamentType.shy:
+        return 'Shy';
+      case TemperamentType.aggressive:
+        return 'Aggressive';
+      case TemperamentType.anxious:
+        return 'Anxious';
+      case TemperamentType.friendly:
+        return 'Friendly';
+      case TemperamentType.independent:
+        return 'Independent';
+      case TemperamentType.social:
+        return 'Social';
+      case TemperamentType.territorial:
+        return 'Territorial';
+      case TemperamentType.other:
+        return 'Other';
+    }
+  }
 }
 
 @JsonEnum()

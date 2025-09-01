@@ -26,6 +26,31 @@ enum IncidentType {
   other,
 }
 
+extension IncidentTypeExtension on IncidentType {
+  String get displayName {
+    switch (this) {
+      case IncidentType.medical:
+        return 'Medical';
+      case IncidentType.behavioral:
+        return 'Behavioral';
+      case IncidentType.accident:
+        return 'Accident';
+      case IncidentType.injury:
+        return 'Injury';
+      case IncidentType.escape:
+        return 'Escape';
+      case IncidentType.aggression:
+        return 'Aggression';
+      case IncidentType.anxiety:
+        return 'Anxiety';
+      case IncidentType.dietary:
+        return 'Dietary';
+      case IncidentType.other:
+        return 'Other';
+    }
+  }
+}
+
 @JsonEnum()
 enum IncidentSeverity {
   @JsonValue('minor')
@@ -36,6 +61,21 @@ enum IncidentSeverity {
   major,
   @JsonValue('critical')
   critical,
+}
+
+extension IncidentSeverityExtension on IncidentSeverity {
+  String get displayName {
+    switch (this) {
+      case IncidentSeverity.minor:
+        return 'Minor';
+      case IncidentSeverity.moderate:
+        return 'Moderate';
+      case IncidentSeverity.major:
+        return 'Major';
+      case IncidentSeverity.critical:
+        return 'Critical';
+    }
+  }
 }
 
 @JsonEnum()
@@ -50,6 +90,23 @@ enum IncidentStatus {
   closed,
   @JsonValue('escalated')
   escalated,
+}
+
+extension IncidentStatusExtension on IncidentStatus {
+  String get displayName {
+    switch (this) {
+      case IncidentStatus.reported:
+        return 'Reported';
+      case IncidentStatus.investigating:
+        return 'Investigating';
+      case IncidentStatus.resolved:
+        return 'Resolved';
+      case IncidentStatus.closed:
+        return 'Closed';
+      case IncidentStatus.escalated:
+        return 'Escalated';
+    }
+  }
 }
 
 @freezed

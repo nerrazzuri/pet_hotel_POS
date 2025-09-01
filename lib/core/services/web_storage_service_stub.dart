@@ -1,17 +1,24 @@
 /// Stub implementation for non-web platforms
 class WebStorageImplementation {
-  /// Get data from localStorage (stub - returns empty list)
+  static final Map<String, List<Map<String, dynamic>>> _storage = {};
+
+  /// Get data from localStorage (in-memory storage for non-web platforms)
   List<Map<String, dynamic>> getData(String key) {
-    return [];
+    return _storage[key] ?? [];
   }
 
-  /// Save data to localStorage (stub - no-op)
+  /// Save data to localStorage (in-memory storage for non-web platforms)
   void saveData(String key, List<Map<String, dynamic>> data) {
-    // No-op on non-web platforms
+    _storage[key] = List.from(data);
   }
 
-  /// Clear all data (stub - no-op)
+  /// Remove data for a specific key (in-memory storage for non-web platforms)
+  void removeData(String key) {
+    _storage.remove(key);
+  }
+
+  /// Clear all data (in-memory storage for non-web platforms)
   void clearAll() {
-    // No-op on non-web platforms
+    _storage.clear();
   }
 }

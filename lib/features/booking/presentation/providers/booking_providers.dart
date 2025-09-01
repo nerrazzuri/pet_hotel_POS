@@ -8,6 +8,11 @@ import 'package:cat_hotel_pos/core/services/pet_dao.dart';
 import 'package:cat_hotel_pos/features/customers/domain/entities/customer.dart';
 import 'package:cat_hotel_pos/features/customers/domain/entities/pet.dart';
 import 'package:cat_hotel_pos/features/booking/domain/entities/room.dart';
+import 'package:cat_hotel_pos/features/pos/domain/entities/payment.dart';
+import 'package:cat_hotel_pos/features/pos/domain/entities/transaction.dart';
+import 'package:cat_hotel_pos/core/services/payment_dao.dart';
+import 'package:cat_hotel_pos/core/services/transaction_dao.dart';
+import 'package:cat_hotel_pos/features/booking/domain/services/booking_payment_service.dart';
 
 
 // Service providers
@@ -24,6 +29,18 @@ final bookingDaoProvider = Provider<BookingDao>((ref) => BookingDao());
 final roomDaoProvider = Provider<RoomDao>((ref) => RoomDao.instance);
 final customerDaoProvider = Provider<CustomerDao>((ref) => CustomerDao());
 final petDaoProvider = Provider<PetDao>((ref) => PetDao());
+
+// Payment providers
+final paymentDaoProvider = Provider<PaymentDao>((ref) => PaymentDao());
+final transactionDaoProvider = Provider<TransactionDao>((ref) => TransactionDao());
+
+final bookingPaymentServiceProvider = Provider<BookingPaymentService>((ref) {
+  return BookingPaymentService(
+    bookingDao: ref.read(bookingDaoProvider),
+    paymentDao: ref.read(paymentDaoProvider),
+    transactionDao: ref.read(transactionDaoProvider),
+  );
+});
 
 // Data providers for other entities
 final customersProvider = FutureProvider<List<Customer>>((ref) async {

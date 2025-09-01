@@ -49,6 +49,23 @@ enum LoyaltyTier {
   diamond,
 }
 
+extension LoyaltyTierExtension on LoyaltyTier {
+  String get displayName {
+    switch (this) {
+      case LoyaltyTier.bronze:
+        return 'Bronze';
+      case LoyaltyTier.silver:
+        return 'Silver';
+      case LoyaltyTier.gold:
+        return 'Gold';
+      case LoyaltyTier.platinum:
+        return 'Platinum';
+      case LoyaltyTier.diamond:
+        return 'Diamond';
+    }
+  }
+}
+
 @JsonEnum()
 enum CustomerSource {
   @JsonValue('walk_in')

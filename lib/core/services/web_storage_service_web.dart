@@ -49,6 +49,18 @@ class WebStorageImplementation {
     }
   }
 
+  /// Remove data for a specific key
+  void removeData(String key) {
+    try {
+      print('WebStorageImplementation.removeData() called with key: $key');
+      html.window.localStorage.remove(key);
+      print('Data removed successfully for key: $key');
+    } catch (e) {
+      print('Error removing from web storage: $e');
+      print('Error stack trace: ${StackTrace.current}');
+    }
+  }
+
   /// Clear all data
   void clearAll() {
     try {

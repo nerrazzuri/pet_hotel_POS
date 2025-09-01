@@ -1,6 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:cat_hotel_pos/features/staff/domain/entities/time_tracking.dart';
+import 'package:cat_hotel_pos/features/staff/domain/entities/staff_member.dart';
+import 'package:cat_hotel_pos/features/staff/domain/services/time_tracking_service.dart';
+import 'package:cat_hotel_pos/core/services/time_tracking_dao.dart';
+import 'package:cat_hotel_pos/core/services/staff_dao.dart';
+import 'package:cat_hotel_pos/features/dashboard/presentation/widgets/staff_hr_module.dart';
 import 'package:cat_hotel_pos/features/auth/domain/entities/user.dart';
 import 'package:cat_hotel_pos/features/auth/domain/services/auth_service.dart';
 import 'package:cat_hotel_pos/features/auth/domain/services/secure_storage_service.dart';
@@ -36,7 +43,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late final UserService _userService;
   late final AuditService _auditService;
   late final PermissionService _permissionService;
+  late final TimeTrackingService _timeTrackingService;
+  late final StaffDao _staffDao;
   User? _currentUser;
+  StaffMember? _currentStaff;
+  TimeTracking? _activeTracking;
+  bool _isTimeTrackingLoading = false;
+  Timer? _durationTimer;
 
   @override
   void initState() {
@@ -45,12 +58,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadCurrentUser();
   }
 
+  @override
+  void dispose() {
+    _durationTimer?.cancel();
+    super.dispose();
+  }
+
   void _initializeServices() {
     _permissionService = PermissionService();
     _auditService = AuditService();
     _userService = UserService(_permissionService, _auditService);
     _authService = AuthService(_userService, _auditService);
     _secureStorage = SecureStorageService();
+    _timeTrackingService = TimeTrackingService(TimeTrackingDao());
+    _staffDao = StaffDao();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -70,27 +91,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           setState(() {
             _currentUser = user;
           });
+          // Load staff data for time tracking if user is staff-level
+          if (_isStaffLevelUser(user)) {
+            await _loadCurrentStaff();
+          }
         } else {
           print('Dashboard: User not found in service, using fallback staff user');
-          setState(() {
-            _currentUser = User(
-              id: 'staff',
-              username: 'staff',
-              email: 'staff@cathotel.com',
-              fullName: 'Staff Member',
-              role: UserRole.staff,
-              permissions: {},
-              isActive: true,
-              lastLoginAt: DateTime.now(),
-              createdAt: DateTime.now(),
-            );
-          });
-        }
-      } else {
-        // Fallback to a default user if no user data found
-        print('Dashboard: No user data found in storage, using fallback staff user');
-        setState(() {
-          _currentUser = User(
+          final fallbackUser = User(
             id: 'staff',
             username: 'staff',
             email: 'staff@cathotel.com',
@@ -101,13 +108,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             lastLoginAt: DateTime.now(),
             createdAt: DateTime.now(),
           );
-        });
-      }
-    } catch (e) {
-      print('Dashboard: Error loading user: $e');
-      // Fallback to a default user
-      setState(() {
-        _currentUser = User(
+          setState(() {
+            _currentUser = fallbackUser;
+          });
+          // Load staff data for time tracking
+          await _loadCurrentStaff();
+        }
+      } else {
+        // Fallback to a default user if no user data found
+        print('Dashboard: No user data found in storage, using fallback staff user');
+        final fallbackUser = User(
           id: 'staff',
           username: 'staff',
           email: 'staff@cathotel.com',
@@ -118,6 +128,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
           lastLoginAt: DateTime.now(),
           createdAt: DateTime.now(),
         );
+        setState(() {
+          _currentUser = fallbackUser;
+        });
+        // Load staff data for time tracking
+        await _loadCurrentStaff();
+      }
+    } catch (e) {
+      print('Dashboard: Error loading user: $e');
+      // Fallback to a default user
+      final fallbackUser = User(
+        id: 'staff',
+        username: 'staff',
+        email: 'staff@cathotel.com',
+        fullName: 'Staff Member',
+        role: UserRole.staff,
+        permissions: {},
+        isActive: true,
+        lastLoginAt: DateTime.now(),
+        createdAt: DateTime.now(),
+      );
+      setState(() {
+        _currentUser = fallbackUser;
+      });
+      // Load staff data for time tracking
+      await _loadCurrentStaff();
+    }
+  }
+
+  Future<void> _loadCurrentStaff() async {
+    try {
+      final staffMembers = await _staffDao.getAll();
+      // For demo purposes, select the first staff member
+      // In a real app, this would be the logged-in user
+      if (staffMembers.isNotEmpty) {
+        _currentStaff = staffMembers.first;
+        await _loadActiveTracking();
+      }
+    } catch (e) {
+      print('Error loading staff: $e');
+    }
+  }
+
+  Future<void> _loadActiveTracking() async {
+    if (_currentStaff == null) return;
+    
+    try {
+      _activeTracking = await _timeTrackingService.getActiveTracking(_currentStaff!.id);
+      if (mounted) {
+        setState(() {});
+        _startOrStopDurationTimer();
+      }
+    } catch (e) {
+      print('Error loading active tracking: $e');
+    }
+  }
+
+  void _startOrStopDurationTimer() {
+    _durationTimer?.cancel();
+    if (_activeTracking != null) {
+      // Start timer to update duration every second
+      _durationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (mounted) {
+          setState(() {});
+        }
       });
     }
   }
@@ -252,6 +326,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SizedBox(height: spacing),
           _buildStatisticsAndStatusRow(),
           SizedBox(height: spacing),
+          // Add HR module for staff-level users
+          if (_currentUser != null && _isStaffLevelUser(_currentUser!)) ...[
+            const StaffHRModule(),
+            SizedBox(height: spacing),
+          ],
           _buildModulesSection(),
           SizedBox(height: spacing),
           _buildFooter(),
@@ -349,30 +428,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.2)),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    _getGreetingEmoji(),
-                    style: const TextStyle(fontSize: 24),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _getGreeting(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        _getGreetingEmoji(),
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _getGreeting(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 16),
+                // Time tracking widget for staff-level users
+                if (_currentUser != null && _isStaffLevelUser(_currentUser!))
+                  _buildTimeTrackingCard(),
+              ],
             ),
           ],
         ),
@@ -1056,5 +1143,154 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } else {
       return '🌙';
     }
+  }
+
+  Widget _buildTimeTrackingCard() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Time Tracking',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: 60,
+            height: 60,
+            child: ElevatedButton(
+              onPressed: _isTimeTrackingLoading ? null : _toggleTimeTracking,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _getTimeTrackingButtonColor(),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: _isTimeTrackingLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Icon(
+                      _getTimeTrackingIcon(),
+                      color: Colors.white,
+                      size: 24,
+                    ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _getTimeTrackingLabel(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (_activeTracking != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              _getDuration(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Color _getTimeTrackingButtonColor() {
+    if (_activeTracking == null) {
+      return Colors.green; // Clock In
+    } else {
+      return Colors.red; // Clock Out
+    }
+  }
+
+  IconData _getTimeTrackingIcon() {
+    if (_activeTracking == null) {
+      return Icons.login; // Clock In
+    } else {
+      return Icons.logout; // Clock Out
+    }
+  }
+
+  String _getTimeTrackingLabel() {
+    if (_activeTracking == null) {
+      return 'Clock In';
+    } else {
+      return 'Clock Out';
+    }
+  }
+
+  String _getDuration() {
+    if (_activeTracking == null) return '';
+    
+    final duration = DateTime.now().difference(_activeTracking!.clockInTime);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    final seconds = duration.inSeconds % 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _toggleTimeTracking() async {
+    if (_currentStaff == null) return;
+
+    setState(() => _isTimeTrackingLoading = true);
+    try {
+      if (_activeTracking == null) {
+        // Clock In
+        await _timeTrackingService.clockIn(
+          staffMemberId: _currentStaff!.id,
+          location: 'Main Office',
+        );
+        _showSuccessSnackBar('Clocked in successfully');
+      } else {
+        // Clock Out
+        await _timeTrackingService.clockOut(staffMemberId: _currentStaff!.id);
+        _showSuccessSnackBar('Clocked out successfully');
+      }
+      await _loadActiveTracking();
+      _startOrStopDurationTimer();
+    } catch (e) {
+      _showErrorSnackBar('Failed to ${_activeTracking == null ? 'clock in' : 'clock out'}: $e');
+    } finally {
+      setState(() => _isTimeTrackingLoading = false);
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
+  }
+
+  bool _isStaffLevelUser(User user) {
+    return user.role == UserRole.staff || user.role == UserRole.manager;
   }
 }

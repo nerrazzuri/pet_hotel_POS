@@ -24,6 +24,29 @@ enum WaiverType {
   other,
 }
 
+extension WaiverTypeExtension on WaiverType {
+  String get displayName {
+    switch (this) {
+      case WaiverType.boardingConsent:
+        return 'Boarding Consent';
+      case WaiverType.groomingConsent:
+        return 'Grooming Consent';
+      case WaiverType.medicalTreatment:
+        return 'Medical Treatment';
+      case WaiverType.emergencyContact:
+        return 'Emergency Contact';
+      case WaiverType.photoRelease:
+        return 'Photo Release';
+      case WaiverType.liabilityWaiver:
+        return 'Liability Waiver';
+      case WaiverType.vaccinationWaiver:
+        return 'Vaccination Waiver';
+      case WaiverType.other:
+        return 'Other';
+    }
+  }
+}
+
 @JsonEnum()
 enum WaiverStatus {
   @JsonValue('pending')
@@ -34,8 +57,29 @@ enum WaiverStatus {
   expired,
   @JsonValue('revoked')
   revoked,
+  @JsonValue('rejected')
+  rejected,
   @JsonValue('not_required')
   notRequired,
+}
+
+extension WaiverStatusExtension on WaiverStatus {
+  String get displayName {
+    switch (this) {
+      case WaiverStatus.pending:
+        return 'Pending';
+      case WaiverStatus.signed:
+        return 'Signed';
+      case WaiverStatus.expired:
+        return 'Expired';
+      case WaiverStatus.revoked:
+        return 'Revoked';
+      case WaiverStatus.rejected:
+        return 'Rejected';
+      case WaiverStatus.notRequired:
+        return 'Not Required';
+    }
+  }
 }
 
 @freezed
@@ -98,6 +142,8 @@ extension WaiverExtension on Waiver {
         return 'Expired';
       case WaiverStatus.revoked:
         return 'Revoked';
+      case WaiverStatus.rejected:
+        return 'Rejected';
       case WaiverStatus.notRequired:
         return 'Not Required';
     }
@@ -113,6 +159,8 @@ extension WaiverExtension on Waiver {
         return Colors.red;
       case WaiverStatus.revoked:
         return Colors.red;
+      case WaiverStatus.rejected:
+        return Colors.red.shade800;
       case WaiverStatus.notRequired:
         return Colors.grey;
     }

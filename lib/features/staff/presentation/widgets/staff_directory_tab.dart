@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cat_hotel_pos/features/staff/domain/entities/staff_member.dart';
+import 'package:cat_hotel_pos/features/staff/domain/entities/staff_position.dart';
 import 'package:cat_hotel_pos/features/staff/domain/services/staff_service.dart';
+import 'package:cat_hotel_pos/features/staff/domain/services/staff_position_service.dart';
 import 'package:cat_hotel_pos/core/services/staff_dao.dart';
+import 'package:cat_hotel_pos/core/services/staff_position_dao.dart';
+import 'package:cat_hotel_pos/features/staff/presentation/widgets/org_chart_widget.dart';
 
 class StaffDirectoryTab extends ConsumerStatefulWidget {
   const StaffDirectoryTab({super.key});
@@ -13,9 +17,34 @@ class StaffDirectoryTab extends ConsumerStatefulWidget {
 
 class _StaffDirectoryTabState extends ConsumerState<StaffDirectoryTab> {
   final TextEditingController _searchController = TextEditingController();
+  final StaffPositionService _positionService = StaffPositionService(StaffPositionDao());
   StaffRole? _selectedRole;
   StaffStatus? _selectedStatus;
   String _searchQuery = '';
+  bool _showOrgChart = false;
+  Map<int, List<StaffPosition>> _orgChart = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+    _loadOrgChart();
+  }
+
+  Future<void> _loadOrgChart() async {
+    try {
+      final chart = await _positionService.getOrgChart();
+      setState(() {
+        _orgChart = chart;
+      });
+    } catch (e) {
+      print('Error loading org chart: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -62,58 +91,93 @@ class _StaffDirectoryTabState extends ConsumerState<StaffDirectoryTab> {
               
               const SizedBox(height: 16),
               
-              // Filter Row
+              // View Toggle and Filter Row
               Row(
                 children: [
-                  Expanded(
-                    child: DropdownButtonFormField<StaffRole>(
-                      value: _selectedRole,
-                      decoration: const InputDecoration(
-                        labelText: 'Role',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: [
-                        const DropdownMenuItem<StaffRole>(
-                          value: null,
-                          child: Text('All Roles'),
+                  // View Toggle
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                                                 _buildViewToggleButton(
+                           icon: Icons.grid_view,
+                           label: 'Card View',
+                           isSelected: !_showOrgChart,
+                           onTap: () => setState(() => _showOrgChart = false),
+                         ),
+                        _buildViewToggleButton(
+                          icon: Icons.account_tree,
+                          label: 'Org Chart',
+                          isSelected: _showOrgChart,
+                          onTap: () => setState(() => _showOrgChart = true),
                         ),
-                        ...StaffRole.values.map((role) => DropdownMenuItem(
-                          value: role,
-                          child: Text(role.displayName),
-                        )),
                       ],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedRole = value;
-                        });
-                      },
                     ),
                   ),
                   
-                  const SizedBox(width: 16),
+                  const Spacer(),
                   
+                  // Filter Row
                   Expanded(
-                    child: DropdownButtonFormField<StaffStatus>(
-                      value: _selectedStatus,
-                      decoration: const InputDecoration(
-                        labelText: 'Status',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: [
-                        const DropdownMenuItem<StaffStatus>(
-                          value: null,
-                          child: Text('All Statuses'),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<StaffRole>(
+                            value: _selectedRole,
+                            decoration: const InputDecoration(
+                              labelText: 'Role',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem<StaffRole>(
+                                value: null,
+                                child: Text('All Roles'),
+                              ),
+                              ...StaffRole.values.map((role) => DropdownMenuItem(
+                                value: role,
+                                child: Text(role.displayName),
+                              )),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedRole = value;
+                              });
+                            },
+                          ),
                         ),
-                        ...StaffStatus.values.map((status) => DropdownMenuItem(
-                          value: status,
-                          child: Text(status.displayName),
-                        )),
+                        
+                        const SizedBox(width: 16),
+                        
+                        Expanded(
+                          child: DropdownButtonFormField<StaffStatus>(
+                            value: _selectedStatus,
+                            decoration: const InputDecoration(
+                              labelText: 'Status',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem<StaffStatus>(
+                                value: null,
+                                child: Text('All Statuses'),
+                              ),
+                              ...StaffStatus.values.map((status) => DropdownMenuItem(
+                                value: status,
+                                child: Text(status.displayName),
+                              )),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedStatus = value;
+                              });
+                            },
+                          ),
+                        ),
                       ],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedStatus = value;
-                        });
-                      },
                     ),
                   ),
                 ],
@@ -122,72 +186,11 @@ class _StaffDirectoryTabState extends ConsumerState<StaffDirectoryTab> {
           ),
         ),
         
-        // Staff List
+        // Content Area - List View or Org Chart
         Expanded(
-          child: FutureBuilder<List<StaffMember>>(
-            future: staffService.getAllStaffMembers(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              
-              if (snapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error, size: 64, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error loading staff members',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        snapshot.error.toString(),
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
-              
-              final allStaff = snapshot.data ?? [];
-              final filteredStaff = _filterStaff(allStaff);
-              
-              if (filteredStaff.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.people_outline, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No staff members found',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Try adjusting your search or filters',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
-              
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: filteredStaff.length,
-                itemBuilder: (context, index) {
-                  final staff = filteredStaff[index];
-                  return _buildStaffCard(context, staff, staffService);
-                },
-              );
-            },
-          ),
+          child: _showOrgChart
+              ? _buildOrgChartView()
+              : _buildListView(staffService),
         ),
       ],
     );
@@ -219,192 +222,260 @@ class _StaffDirectoryTabState extends ConsumerState<StaffDirectoryTab> {
     }).toList();
   }
 
-  Widget _buildStaffCard(BuildContext context, StaffMember staff, StaffService staffService) {
+    Widget _buildStaffCardView(BuildContext context, StaffMember staff, StaffService staffService) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          radius: 30,
-          backgroundColor: staff.role.color,
-          child: Text(
-            staff.fullName.split(' ').map((n) => n[0]).join(''),
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: staff.role.color.withOpacity(0.3)),
+      ),
+      child: InkWell(
+        onTap: () => _showStaffDetails(context, staff),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                staff.role.color.withOpacity(0.05),
+                staff.role.color.withOpacity(0.1),
+              ],
             ),
           ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                staff.fullName,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: staff.status.color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: staff.status.color),
-              ),
-              child: Text(
-                staff.status.displayName,
-                style: TextStyle(
-                  color: staff.status.color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.badge, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                Text(
-                  staff.employeeId,
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-                const SizedBox(width: 16),
-                Icon(Icons.work, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                Text(
-                  staff.role.displayName,
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.email, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    staff.email,
-                    style: TextStyle(color: Colors.grey[600]),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Icon(Icons.phone, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                Text(
-                  staff.phone,
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-                if (staff.hourlyRate != null) ...[
-                  const SizedBox(width: 16),
-                  Icon(Icons.attach_money, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 8),
-                  Text(
-                    'RM ${staff.hourlyRate!.toStringAsFixed(2)}/hr',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ],
-            ),
-            if (staff.department != null || staff.position != null) ...[
-              const SizedBox(height: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with avatar and status
               Row(
                 children: [
-                  Icon(Icons.business, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${staff.department ?? ''}${staff.department != null && staff.position != null ? ' - ' : ''}${staff.position ?? ''}',
-                    style: TextStyle(color: Colors.grey[600]),
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: staff.role.color,
+                    child: Text(
+                      staff.fullName.split(' ').map((n) => n[0]).join(''),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: staff.status.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: staff.status.color),
+                    ),
+                    child: Text(
+                      staff.status.displayName,
+                      style: TextStyle(
+                        color: staff.status.color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Staff name
+              Text(
+                staff.fullName,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Employee ID
+              Row(
+                children: [
+                  Icon(Icons.badge, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      staff.employeeId,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Role
+              Row(
+                children: [
+                  Icon(Icons.work, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      staff.role.displayName,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Email
+              Row(
+                children: [
+                  Icon(Icons.email, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      staff.email,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Phone
+              Row(
+                children: [
+                  Icon(Icons.phone, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      staff.phone,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              
+              if (staff.hourlyRate != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.attach_money, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      'RM ${staff.hourlyRate!.toStringAsFixed(2)}/hr',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              
+              const Spacer(),
+              
+              // Action button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      size: 18,
+                      color: Colors.grey[600],
+                    ),
+                    onSelected: (value) => _handleStaffAction(context, value, staff, staffService),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'view',
+                        child: Row(
+                          children: [
+                            Icon(Icons.visibility, size: 16),
+                            SizedBox(width: 8),
+                            Text('View Details'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 16),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      if (staff.status == StaffStatus.active)
+                      const PopupMenuItem(
+                        value: 'deactivate',
+                        child: Row(
+                          children: [
+                            Icon(Icons.block, color: Colors.orange, size: 16),
+                            SizedBox(width: 8),
+                            Text('Deactivate'),
+                          ],
+                        ),
+                      ),
+                      if (staff.status == StaffStatus.inactive)
+                      const PopupMenuItem(
+                        value: 'reactivate',
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green, size: 16),
+                            SizedBox(width: 8),
+                            Text('Reactivate'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'shifts',
+                        child: Row(
+                          children: [
+                            Icon(Icons.schedule, size: 16),
+                            SizedBox(width: 8),
+                            Text('View Shifts'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Colors.red, size: 16),
+                            SizedBox(width: 8),
+                            Text('Delete'),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ],
-          ],
+          ),
         ),
-        trailing: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert),
-          onSelected: (value) => _handleStaffAction(context, value, staff, staffService),
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'view',
-              child: Row(
-                children: [
-                  Icon(Icons.visibility),
-                  SizedBox(width: 8),
-                  Text('View Details'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [
-                  Icon(Icons.edit),
-                  SizedBox(width: 8),
-                  Text('Edit'),
-                ],
-              ),
-            ),
-            if (staff.status == StaffStatus.active)
-              const PopupMenuItem(
-                value: 'deactivate',
-                child: Row(
-                  children: [
-                    Icon(Icons.block, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text('Deactivate'),
-                  ],
-                ),
-              ),
-            if (staff.status == StaffStatus.inactive)
-              const PopupMenuItem(
-                value: 'reactivate',
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Reactivate'),
-                  ],
-                ),
-              ),
-            const PopupMenuItem(
-              value: 'shifts',
-              child: Row(
-                children: [
-                  Icon(Icons.schedule),
-                  SizedBox(width: 8),
-                  Text('View Shifts'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('Delete'),
-                ],
-              ),
-            ),
-          ],
-        ),
-        onTap: () => _showStaffDetails(context, staff),
       ),
     );
   }
@@ -598,6 +669,162 @@ class _StaffDirectoryTabState extends ConsumerState<StaffDirectoryTab> {
           ),
         ],
       ),
+    );
+  }
+
+  // Helper methods for view switching
+  Widget _buildViewToggleButton({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue[600] : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.grey[600],
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[600],
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListView(StaffService staffService) {
+    return FutureBuilder<List<StaffMember>>(
+      future: staffService.getAllStaffMembers(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading staff members',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  snapshot.error.toString(),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+        
+        final allStaff = snapshot.data ?? [];
+        final filteredStaff = _filterStaff(allStaff);
+        
+        if (filteredStaff.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  'No staff members found',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Try adjusting your search or filters',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 5, // 5 cards per row
+            childAspectRatio: 0.8, // Adjust aspect ratio for card height
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: filteredStaff.length,
+          itemBuilder: (context, index) {
+            final staff = filteredStaff[index];
+            return _buildStaffCardView(context, staff, staffService);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildOrgChartView() {
+    return FutureBuilder<List<StaffMember>>(
+      future: StaffService(StaffDao()).getAllStaffMembers(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading staff members',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  snapshot.error.toString(),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+        
+        final staffMembers = snapshot.data ?? [];
+        
+        return OrgChartWidget(
+          orgChart: _orgChart,
+          staffMembers: staffMembers,
+          onPositionTap: () {
+            // Handle position tap
+          },
+          onStaffTap: () {
+            // Handle staff tap
+          },
+        );
+      },
     );
   }
 }

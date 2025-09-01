@@ -13,6 +13,31 @@ import 'package:cat_hotel_pos/core/services/incident_dao.dart';
 import 'package:cat_hotel_pos/features/customers/presentation/widgets/customer_analytics_widget.dart';
 import 'package:cat_hotel_pos/features/customers/presentation/widgets/loyalty_tracking_widget.dart';
 import 'package:cat_hotel_pos/features/customers/presentation/widgets/communication_history_widget.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/widgets/edit_customer_dialog.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/widgets/edit_pet_dialog.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/widgets/edit_vaccination_dialog.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/widgets/edit_waiver_dialog.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/widgets/edit_incident_dialog.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/widgets/pet_details_dialog.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/widgets/vaccination_details_dialog.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/widgets/waiver_details_dialog.dart';
+import 'package:cat_hotel_pos/features/customers/presentation/widgets/incident_details_dialog.dart';
+import 'package:cat_hotel_pos/core/services/pos_dao.dart';
+import 'package:cat_hotel_pos/features/pos/domain/entities/pos_transaction.dart';
+import 'package:cat_hotel_pos/core/services/payment_transaction_dao.dart';
+import 'package:cat_hotel_pos/features/payments/domain/entities/payment_transaction.dart';
+import 'package:cat_hotel_pos/features/payments/domain/entities/payment_method.dart';
+import 'package:cat_hotel_pos/core/services/booking_dao.dart';
+import 'package:cat_hotel_pos/features/booking/domain/entities/booking.dart';
+import 'package:cat_hotel_pos/core/services/service_dao.dart';
+import 'package:cat_hotel_pos/features/services/domain/entities/service.dart';
+import 'package:cat_hotel_pos/core/services/loyalty_dao.dart';
+import 'package:cat_hotel_pos/features/loyalty/domain/entities/loyalty_transaction.dart';
+import 'package:cat_hotel_pos/features/loyalty/domain/entities/loyalty_program.dart' as loyalty;
+import 'package:cat_hotel_pos/core/services/crm_dao.dart';
+import 'package:cat_hotel_pos/features/crm/domain/entities/communication_template.dart';
+import 'package:cat_hotel_pos/features/crm/domain/entities/campaign.dart';
+import 'package:cat_hotel_pos/features/crm/domain/entities/automated_reminder.dart';
 import 'package:uuid/uuid.dart';
 
 class CustomerPetProfilesScreen extends ConsumerStatefulWidget {
@@ -41,7 +66,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this); // 7 tabs after removing Pets tab
+    _tabController = TabController(length: 5, vsync: this); // 5 tabs for main screen (removed Loyalty and Communication)
   }
   
   @override
@@ -57,6 +82,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
         title: const Text('Customer & Pet Management'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+
         actions: [
           // Enhanced search toggle
           IconButton(
@@ -80,6 +106,26 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
             onPressed: _showCustomerSettings,
             tooltip: 'Customer Settings',
           ),
+          // Back to Dashboard Button (moved to right side)
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.dashboard,
+                color: Theme.of(context).primaryColor,
+                size: 24,
+              ),
+              onPressed: () => Navigator.of(context).pushReplacementNamed('/dashboard'),
+              tooltip: 'Back to Dashboard',
+              style: IconButton.styleFrom(
+                padding: const EdgeInsets.all(12),
+              ),
+            ),
+          ),
         ],
         bottom: TabBar(
           controller: _tabController,
@@ -95,10 +141,6 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
             Tab(text: 'Vaccinations', icon: Icon(Icons.vaccines)),
             Tab(text: 'Waivers & Incidents', icon: Icon(Icons.description)),
             Tab(text: 'Analytics', icon: Icon(Icons.analytics)),
-            Tab(text: 'Loyalty', icon: Icon(Icons.card_giftcard)),
-            Tab(text: 'Communication', icon: Icon(Icons.message)),
-            Tab(text: 'Payment History', icon: Icon(Icons.payment)),
-            Tab(text: 'Product Management', icon: Icon(Icons.inventory)),
           ],
         ),
       ),
@@ -117,10 +159,6 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
                 _buildVaccinationsTab(),
                 _buildWaiversIncidentsTab(),
                 _buildAnalyticsTab(),
-                _buildLoyaltyTab(),
-                _buildCommunicationTab(),
-                _buildPaymentHistoryTab(),
-                _buildProductManagementTab(),
               ],
             ),
           ),
@@ -542,11 +580,18 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
                         ],
                       ),
                     )
-                  : ListView.builder(
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 5,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.8,
+                      ),
                       itemCount: waivers.length,
                       itemBuilder: (context, index) {
                         final waiver = waivers[index];
-                        return _buildWaiverCard(waiver);
+                        return _buildCompactWaiverCard(waiver);
                       },
                     ),
             ),
@@ -657,11 +702,18 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
                         ],
                       ),
                     )
-                  : ListView.builder(
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 5,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.8,
+                      ),
                       itemCount: incidents.length,
                       itemBuilder: (context, index) {
                         final incident = incidents[index];
-                        return _buildIncidentCard(incident);
+                        return _buildCompactIncidentCard(incident);
                       },
                     ),
             ),
@@ -3174,6 +3226,8 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
         return Colors.blue[400]!;
       case LoyaltyTier.diamond:
         return Colors.purple[400]!;
+      default:
+        return Colors.grey;
     }
   }
   
@@ -3911,6 +3965,300 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
         return Colors.grey;
     }
   }
+
+  // Compact Waiver Card for Grid View
+  Widget _buildCompactWaiverCard(Waiver waiver) {
+    final isExpired = waiver.expiryDate != null && waiver.expiryDate!.isBefore(DateTime.now());
+    final isExpiringSoon = waiver.expiryDate != null && waiver.expiryDate!.isBefore(
+      DateTime.now().add(const Duration(days: 30))
+    );
+    
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: () => _showWaiverDetailsDialog(waiver),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with status indicator
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isExpired 
+                            ? Colors.red[100] 
+                            : isExpiringSoon 
+                                ? Colors.orange[100] 
+                                : Colors.green[100],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isExpired 
+                              ? Colors.red 
+                              : isExpiringSoon 
+                                  ? Colors.orange 
+                                  : Colors.green,
+                        ),
+                      ),
+                      child: Text(
+                        isExpired 
+                            ? 'EXPIRED' 
+                            : isExpiringSoon 
+                                ? 'EXPIRES SOON' 
+                                : 'VALID',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isExpired 
+                              ? Colors.red[700] 
+                              : isExpiringSoon 
+                                  ? Colors.orange[700] 
+                                  : Colors.green[700],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.description,
+                    color: isExpired 
+                        ? Colors.red 
+                        : isExpiringSoon 
+                            ? Colors.orange 
+                            : Colors.green,
+                    size: 20,
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Title
+              Text(
+                waiver.title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Type and Status
+              Text(
+                waiver.type.name,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
+              
+              Text(
+                waiver.status.name,
+                style: TextStyle(
+                  color: waiver.status == WaiverStatus.signed ? Colors.green[700] : Colors.red[700],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              
+              const Spacer(),
+              
+              // Expiry info
+              if (waiver.expiryDate != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Expires: ${_formatDate(waiver.expiryDate!)}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
+              ],
+              
+              const SizedBox(height: 8),
+              
+              // Quick actions
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    onPressed: () => _showEditWaiverDialog(waiver),
+                    icon: const Icon(Icons.edit, size: 16),
+                    tooltip: 'Edit',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    onPressed: () => _showWaiverDetailsDialog(waiver),
+                    icon: const Icon(Icons.info, size: 16),
+                    tooltip: 'Details',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    onPressed: () => _renewWaiver(waiver),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    tooltip: 'Renew',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Compact Incident Card for Grid View
+  Widget _buildCompactIncidentCard(Incident incident) {
+    final severityColor = _getSeverityColor(incident.severity.name);
+    
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: () => _showIncidentDetailsDialog(incident),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with severity indicator
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: severityColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: severityColor),
+                      ),
+                      child: Text(
+                        incident.severity.name.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: severityColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.warning,
+                    color: severityColor,
+                    size: 20,
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Title
+              Text(
+                incident.title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Date and Location
+              Text(
+                _formatDate(incident.reportedDate),
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
+              
+              Text(
+                incident.location ?? 'Unknown',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              const Spacer(),
+              
+              // Follow-up indicator
+              if (incident.followUpRequired != null && incident.followUpRequired!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange),
+                  ),
+                  child: Text(
+                    'FOLLOW-UP REQUIRED',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.orange[700],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+              
+              const SizedBox(height: 8),
+              
+              // Quick actions
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  IconButton(
+                    onPressed: () => _showEditIncidentDialog(incident),
+                    icon: const Icon(Icons.edit, size: 16),
+                    tooltip: 'Edit',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    onPressed: () => _showIncidentDetailsDialog(incident),
+                    icon: const Icon(Icons.info, size: 16),
+                    tooltip: 'Details',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    onPressed: () => _updateIncidentStatus(incident),
+                    icon: const Icon(Icons.update, size: 16),
+                    tooltip: 'Update Status',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   
   // ... existing code ...
 
@@ -3918,15 +4266,13 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showEditCustomerDialog(Customer customer) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Customer: ${customer.firstName} ${customer.lastName}'),
-        content: const Text('Edit customer form coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (context) => EditCustomerDialog(
+        customer: customer,
+        onUpdate: (updatedCustomer) async {
+          // Update customer using the service
+          await _customerDao.update(updatedCustomer);
+          setState(() {}); // Refresh the UI
+        },
       ),
     );
   }
@@ -3967,15 +4313,13 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showEditPetDialog(Pet pet) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Pet: ${pet.name}'),
-        content: const Text('Edit pet form coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (context) => EditPetDialog(
+        pet: pet,
+        onUpdate: (updatedPet) async {
+          // Update pet using the service
+          await _petDao.update(updatedPet);
+          setState(() {}); // Refresh the UI
+        },
       ),
     );
   }
@@ -3983,16 +4327,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showPetDetailsDialog(Pet pet) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Pet Details: ${pet.name}'),
-        content: const Text('Detailed pet view coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      builder: (context) => PetDetailsDialog(pet: pet),
     );
   }
 
@@ -4025,15 +4360,13 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showEditVaccinationDialog(Vaccination vaccination) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Vaccination: ${vaccination.name}'),
-        content: const Text('Edit vaccination form coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (context) => EditVaccinationDialog(
+        vaccination: vaccination,
+        onUpdate: (updatedVaccination) async {
+          // Update vaccination using the service
+          await _vaccinationDao.update(updatedVaccination);
+          setState(() {}); // Refresh the UI
+        },
       ),
     );
   }
@@ -4041,16 +4374,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showVaccinationDetailsDialog(Vaccination vaccination) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Vaccination Details: ${vaccination.name}'),
-        content: const Text('Detailed vaccination view coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      builder: (context) => VaccinationDetailsDialog(vaccination: vaccination),
     );
   }
 
@@ -4346,15 +4670,13 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showEditWaiverDialog(Waiver waiver) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Waiver: ${waiver.title}'),
-        content: const Text('Edit waiver form coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (context) => EditWaiverDialog(
+        waiver: waiver,
+        onUpdate: (updatedWaiver) async {
+          // Update waiver using the service
+          await _waiverDao.update(updatedWaiver);
+          setState(() {}); // Refresh the UI
+        },
       ),
     );
   }
@@ -4362,16 +4684,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showWaiverDetailsDialog(Waiver waiver) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Waiver Details: ${waiver.title}'),
-        content: const Text('Detailed waiver view coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      builder: (context) => WaiverDetailsDialog(waiver: waiver),
     );
   }
 
@@ -4752,15 +5065,13 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showEditIncidentDialog(Incident incident) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Incident: ${incident.type.name}'),
-        content: const Text('Edit incident form coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (context) => EditIncidentDialog(
+        incident: incident,
+        onUpdate: (updatedIncident) async {
+          // Update incident using the service
+          await _incidentDao.update(updatedIncident);
+          setState(() {}); // Refresh the UI
+        },
       ),
     );
   }
@@ -4768,16 +5079,7 @@ class _CustomerPetProfilesScreenState extends ConsumerState<CustomerPetProfilesS
   void _showIncidentDetailsDialog(Incident incident) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Incident Details: ${incident.type.name}'),
-        content: const Text('Detailed incident view coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      builder: (context) => IncidentDetailsDialog(incident: incident),
     );
   }
 
@@ -4851,20 +5153,41 @@ class _CustomerDetailsDialog extends ConsumerStatefulWidget {
 class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
     with SingleTickerProviderStateMixin {
   final PetDao _petDao = PetDao();
+  final VaccinationDao _vaccinationDao = VaccinationDao();
+  final PosDao _posDao = PosDao();
+  final PaymentTransactionDao _paymentDao = PaymentTransactionDao();
+  final BookingDao _bookingDao = BookingDao();
+  final ServiceDao _serviceDao = ServiceDao();
+  final LoyaltyDao _loyaltyDao = LoyaltyDao();
+  final CrmDao _crmDao = CrmDao();
   late TabController _tabController;
   late Future<List<Pet>> _petsFuture;
-  late Future<List<Map<String, dynamic>>> _transactionsFuture;
-  late Future<List<Map<String, dynamic>>> _paymentsFuture;
-  late Future<List<Map<String, dynamic>>> _servicesFuture;
+  late Future<List<POSTransaction>> _transactionsFuture;
+  late Future<List<PaymentTransaction>> _paymentsFuture;
+  late Future<List<Booking>> _bookingsFuture;
+  late Future<List<Service>> _allServicesFuture;
+  late Future<List<Vaccination>> _vaccinationsFuture;
+  late Future<List<LoyaltyTransaction>> _loyaltyTransactionsFuture;
+  late Future<loyalty.LoyaltyProgram?> _activeLoyaltyProgramFuture;
+  late Future<List<AutomatedReminder>> _remindersFuture;
+  late Future<List<CommunicationTemplate>> _templatesFuture;
+  late Future<List<Campaign>> _campaignsFuture;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 9, vsync: this);
     _petsFuture = _petDao.getByCustomerId(widget.customer.id);
-    _transactionsFuture = _getMockTransactions();
-    _paymentsFuture = _getMockPayments();
-    _servicesFuture = _getMockServices();
+    _transactionsFuture = _posDao.getTransactionsByCustomerId(widget.customer.id);
+    _paymentsFuture = _paymentDao.getByCustomerId(widget.customer.id);
+    _bookingsFuture = _bookingDao.getByCustomerId(widget.customer.id);
+    _allServicesFuture = _serviceDao.getAll();
+    _vaccinationsFuture = _vaccinationDao.getByCustomerId(widget.customer.id);
+    _loyaltyTransactionsFuture = _loyaltyDao.getLoyaltyTransactionsByCustomerId(widget.customer.id);
+    _activeLoyaltyProgramFuture = _loyaltyDao.getActiveLoyaltyProgram();
+    _remindersFuture = _crmDao.getRemindersByCustomerId(widget.customer.id);
+    _templatesFuture = _crmDao.getAllTemplates();
+    _campaignsFuture = _crmDao.getAllCampaigns();
   }
 
   @override
@@ -5007,25 +5330,16 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
         ),
         
         // Quick Actions
-        Column(
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => _showEditCustomerDialog(widget.customer),
-              icon: const Icon(Icons.edit),
-              label: const Text('Edit Profile'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
+        if (_tabController.index == 0) // Only show Edit Profile when Profile tab is active
+          ElevatedButton.icon(
+            onPressed: () => _showEditCustomerDialog(widget.customer),
+            icon: const Icon(Icons.edit),
+            label: const Text('Edit Profile'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
             ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => _scheduleAppointment(),
-              icon: const Icon(Icons.calendar_today),
-              label: const Text('Schedule'),
-            ),
-          ],
-        ),
+          ),
         
         // Close Button
         IconButton(
@@ -5096,6 +5410,41 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
           const SizedBox(height: 16),
           
           _buildInfoCard('Notes', widget.customer.notes ?? 'No notes available', Icons.note),
+          
+          const SizedBox(height: 32),
+          _buildSectionTitle('Quick Actions'),
+          const SizedBox(height: 16),
+          
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showScheduleAppointmentDialog(),
+                  icon: const Icon(Icons.schedule),
+                  label: const Text('Schedule Appointment'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showSendMessageDialog(),
+                  icon: const Icon(Icons.message),
+                  label: const Text('Send Message'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -5104,7 +5453,7 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
   // Pets Tab
   Widget _buildPetsTab() {
     return Container(
-      color: Colors.grey[50], // Debug background color
+      color: Colors.grey[50],
       child: FutureBuilder<List<Pet>>(
         future: _petsFuture,
         builder: (context, snapshot) {
@@ -5154,20 +5503,8 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
                 ),
                 const SizedBox(height: 16),
                 
-                // Pets grid
-                SizedBox(
-                  height: 400,
-                  child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.8,
-                    ),
-                    itemCount: pets.length,
-                    itemBuilder: (context, index) => _buildDetailedPetCard(pets[index]),
-                  ),
-                ),
+                // Pets list with two-column layout
+                ...pets.map((pet) => _buildRedesignedPetCard(pet)),
               ],
             ),
           );
@@ -5178,7 +5515,7 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
 
   // Transactions Tab
   Widget _buildTransactionsTab() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
+    return FutureBuilder<List<POSTransaction>>(
       future: _transactionsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -5201,13 +5538,17 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
             ),
             const SizedBox(height: 24),
             
+            // Search and filter bar
+            _buildTransactionSearchBar(),
+            const SizedBox(height: 16),
+            
             // Transactions list
             Expanded(
               child: transactions.isEmpty
                   ? Center(child: Text('No transactions found', style: TextStyle(color: Colors.grey[700])))
                   : ListView.builder(
                       itemCount: transactions.length,
-                      itemBuilder: (context, index) => _buildTransactionCard(transactions[index]),
+                      itemBuilder: (context, index) => _buildPOSTransactionCard(transactions[index]),
                     ),
             ),
           ],
@@ -5218,7 +5559,7 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
 
   // Payments Tab
   Widget _buildPaymentsTab() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
+    return FutureBuilder<List<PaymentTransaction>>(
       future: _paymentsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -5241,13 +5582,17 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
             ),
             const SizedBox(height: 24),
             
+            // Search and filter bar
+            _buildPaymentSearchBar(),
+            const SizedBox(height: 16),
+            
             // Payments list
             Expanded(
               child: payments.isEmpty
                   ? const Center(child: Text('No payments found'))
                   : ListView.builder(
                       itemCount: payments.length,
-                      itemBuilder: (context, index) => _buildPaymentCard(payments[index]),
+                      itemBuilder: (context, index) => _buildPaymentTransactionCard(payments[index]),
                     ),
             ),
           ],
@@ -5258,36 +5603,40 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
 
   // Services Tab
   Widget _buildServicesTab() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _servicesFuture,
+    return FutureBuilder<List<Booking>>(
+      future: _bookingsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
         
-        final payments = snapshot.data ?? [];
+        final bookings = snapshot.data ?? [];
         
         return Column(
           children: [
             // Summary cards
             Row(
               children: [
-                Expanded(child: _buildSummaryCard('Total Services', payments.length.toString(), Icons.medical_services, Colors.teal)),
+                Expanded(child: _buildSummaryCard('Total Bookings', bookings.length.toString(), Icons.medical_services, Colors.teal)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildSummaryCard('This Month', '${_getThisMonthServices(payments).length}', Icons.calendar_month, Colors.orange)),
+                Expanded(child: _buildSummaryCard('This Month', '${_getThisMonthBookings(bookings).length}', Icons.calendar_month, Colors.orange)),
                 const SizedBox(width: 16),
-                Expanded(child: _buildSummaryCard('Upcoming', '${_getUpcomingServices(payments).length}', Icons.schedule, Colors.blue)),
+                Expanded(child: _buildSummaryCard('Upcoming', '${_getUpcomingBookings(bookings).length}', Icons.schedule, Colors.blue)),
               ],
             ),
             const SizedBox(height: 24),
             
-            // Services list
+            // Search and filter bar
+            _buildServiceSearchBar(),
+            const SizedBox(height: 16),
+            
+            // Bookings list
             Expanded(
-              child: payments.isEmpty
-                  ? const Center(child: Text('No services found'))
+              child: bookings.isEmpty
+                  ? const Center(child: Text('No bookings found'))
                   : ListView.builder(
-                      itemCount: payments.length,
-                      itemBuilder: (context, index) => _buildServiceCard(payments[index]),
+                      itemCount: bookings.length,
+                      itemBuilder: (context, index) => _buildBookingCard(bookings[index]),
                     ),
             ),
           ],
@@ -5298,36 +5647,55 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
 
   // Loyalty Tab
   Widget _buildLoyaltyTab() {
-    final loyaltyTier = widget.customer.loyaltyTier;
-    
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Current Status
-          _buildSectionTitle('Current Loyalty Status'),
-          const SizedBox(height: 16),
-          
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: loyaltyTier == LoyaltyTier.platinum ? [Colors.purple, Colors.indigo] :
-                        loyaltyTier == LoyaltyTier.gold ? [Colors.amber, Colors.orange] :
-                        loyaltyTier == LoyaltyTier.silver ? [Colors.grey, Colors.blueGrey] :
-                        [Colors.brown, Colors.orange],
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
+    return FutureBuilder<List<LoyaltyTransaction>>(
+      future: _loyaltyTransactionsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final loyaltyTransactions = snapshot.data ?? [];
+        final loyaltyTier = widget.customer.loyaltyTier ?? LoyaltyTier.bronze;
+        final totalPoints = loyaltyTransactions.fold<int>(0, (sum, tx) => sum + tx.points);
+        
+        return Column(
+          children: [
+            // Summary cards
+            Row(
               children: [
-                Icon(
-                  loyaltyTier == LoyaltyTier.platinum ? Icons.diamond :
-                  loyaltyTier == LoyaltyTier.gold ? Icons.star :
-                  loyaltyTier == LoyaltyTier.silver ? Icons.star_border :
-                  Icons.favorite,
-                  color: Colors.white,
-                  size: 48,
+                Expanded(child: _buildSummaryCard('Total Points', totalPoints.toString(), Icons.card_giftcard, Colors.purple)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('Current Tier', loyaltyTier.displayName, Icons.star, Colors.amber)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('Transactions', loyaltyTransactions.length.toString(), Icons.history, Colors.blue)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Current Status
+            _buildSectionTitle('Current Loyalty Status'),
+            const SizedBox(height: 16),
+            
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: loyaltyTier == LoyaltyTier.platinum ? [Colors.purple, Colors.indigo] :
+                          loyaltyTier == LoyaltyTier.gold ? [Colors.amber, Colors.orange] :
+                          loyaltyTier == LoyaltyTier.silver ? [Colors.grey, Colors.blueGrey] :
+                          [Colors.brown, Colors.orange],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    loyaltyTier == LoyaltyTier.platinum ? Icons.diamond :
+                    loyaltyTier == LoyaltyTier.gold ? Icons.star :
+                    loyaltyTier == LoyaltyTier.silver ? Icons.star_border :
+                    Icons.favorite,
+                    color: Colors.white,
+                    size: 48,
                 ),
                 const SizedBox(width: 20),
                 Expanded(
@@ -5335,7 +5703,7 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        loyaltyTier?.name.toUpperCase() ?? 'No Tier',
+                        loyaltyTier.displayName.toUpperCase(),
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -5344,7 +5712,7 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Join our loyalty program to earn rewards!',
+                        '$totalPoints points earned',
                         style: const TextStyle(
                           fontSize: 16,
                           color: Colors.white70,
@@ -5357,27 +5725,24 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
             ),
           ),
           
-          const SizedBox(height: 32),
-          _buildSectionTitle('Loyalty Benefits'),
+          const SizedBox(height: 24),
+          
+          // Search and filter bar
+          _buildLoyaltySearchBar(),
           const SizedBox(height: 16),
           
-          _buildLoyaltyBenefitsGrid(loyaltyTier),
-          
-          const SizedBox(height: 32),
-          _buildSectionTitle('Points & Rewards'),
-          const SizedBox(height: 16),
-          
-          Row(
-            children: [
-              Expanded(child: _buildInfoCard('Current Points', '1,250', Icons.star)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildInfoCard('Points This Month', '150', Icons.trending_up)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildInfoCard('Next Tier', '250 more points', Icons.arrow_upward)),
-            ],
+          // Loyalty transactions list
+          Expanded(
+            child: loyaltyTransactions.isEmpty
+                ? const Center(child: Text('No loyalty transactions found'))
+                : ListView.builder(
+                    itemCount: loyaltyTransactions.length,
+                    itemBuilder: (context, index) => _buildLoyaltyTransactionCard(loyaltyTransactions[index]),
+                  ),
           ),
         ],
-      ),
+      );
+      },
     );
   }
 
@@ -5387,6 +5752,37 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Communication Overview
+          _buildSectionTitle('Communication Overview'),
+          const SizedBox(height: 16),
+          
+          FutureBuilder<List<AutomatedReminder>>(
+            future: _remindersFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final reminders = snapshot.data ?? [];
+              final pendingReminders = reminders.where((r) => r.status == ReminderStatus.pending).length;
+              final sentReminders = reminders.where((r) => r.status == ReminderStatus.sent).length;
+              final failedReminders = reminders.where((r) => r.status == ReminderStatus.failed).length;
+              
+              return Row(
+                children: [
+                  Expanded(child: _buildInfoCard('Pending Reminders', '$pendingReminders', Icons.schedule)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Sent Reminders', '$sentReminders', Icons.check_circle)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Failed Reminders', '$failedReminders', Icons.error)),
+                ],
+              );
+            },
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Communication Preferences
           _buildSectionTitle('Communication Preferences'),
           const SizedBox(height: 16),
           
@@ -5401,10 +5797,586 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
           ),
           
           const SizedBox(height: 32),
-          _buildSectionTitle('Recent Communications'),
+          
+          // Automated Reminders
+          _buildSectionTitle('Automated Reminders'),
           const SizedBox(height: 16),
           
-          _buildCommunicationHistory(),
+          _buildCommunicationSearchBar(),
+          const SizedBox(height: 16),
+          
+          FutureBuilder<List<AutomatedReminder>>(
+            future: _remindersFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text('Error loading reminders: ${snapshot.error}'),
+                    ],
+                  ),
+                );
+              }
+              
+              final reminders = snapshot.data ?? [];
+              
+              if (reminders.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Column(
+                      children: [
+                        Icon(Icons.schedule, size: 48, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('No automated reminders', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        Text('Reminders will appear here when scheduled', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: reminders.length,
+                itemBuilder: (context, index) {
+                  final reminder = reminders[index];
+                  return _buildReminderCard(reminder);
+                },
+              );
+            },
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Communication Templates
+          _buildSectionTitle('Available Templates'),
+          const SizedBox(height: 16),
+          
+          FutureBuilder<List<CommunicationTemplate>>(
+            future: _templatesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final templates = snapshot.data ?? [];
+              
+              if (templates.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Column(
+                      children: [
+                        Icon(Icons.description, size: 48, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('No communication templates', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        Text('Templates will appear here when available', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.5,
+                ),
+                itemCount: templates.length,
+                itemBuilder: (context, index) {
+                  final template = templates[index];
+                  return _buildTemplateCard(template);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Communication Tab Helper Methods
+  Widget _buildCommunicationSearchBar() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search reminders...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onChanged: (value) {
+                  // TODO: Implement search functionality
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton.icon(
+              onPressed: () {
+                // TODO: Implement create reminder functionality
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Create reminder dialog coming soon!')),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Create Reminder'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReminderCard(AutomatedReminder reminder) {
+    final statusColor = _getReminderStatusColor(reminder.status);
+    final typeIcon = _getReminderTypeIcon(reminder.type);
+    final channelIcon = _getReminderChannelIcon(reminder.channel);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: statusColor.withOpacity(0.1),
+          child: Icon(typeIcon, color: statusColor),
+        ),
+        title: Text(
+          reminder.subject,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(reminder.message),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    reminder.status.name.toUpperCase(),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(channelIcon, size: 14, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  reminder.channel.name.toUpperCase(),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.schedule, size: 14, color: Colors.orange),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDateTime(reminder.scheduledAt),
+                  style: TextStyle(
+                    color: Colors.orange[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: PopupMenuButton<String>(
+          onSelected: (value) => _handleReminderAction(value, reminder),
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'view',
+              child: Row(
+                children: [
+                  Icon(Icons.visibility),
+                  SizedBox(width: 8),
+                  Text('View Details'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  Icon(Icons.edit),
+                  SizedBox(width: 8),
+                  Text('Edit'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'send_now',
+              child: Row(
+                children: [
+                  Icon(Icons.send),
+                  SizedBox(width: 8),
+                  Text('Send Now'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'cancel',
+              child: Row(
+                children: [
+                  Icon(Icons.cancel),
+                  SizedBox(width: 8),
+                  Text('Cancel'),
+                ],
+              ),
+            ),
+          ],
+          child: const Icon(Icons.more_vert),
+        ),
+        onTap: () => _showReminderDetails(reminder),
+      ),
+    );
+  }
+
+  Widget _buildTemplateCard(CommunicationTemplate template) {
+    final typeColor = _getTemplateTypeColor(template.type);
+    final categoryIcon = _getTemplateCategoryIcon(template.category);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(categoryIcon, color: typeColor, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    template.name,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: typeColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              template.description,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: typeColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: typeColor.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    template.type.name.toUpperCase(),
+                    style: TextStyle(
+                      color: typeColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    template.category.name.toUpperCase(),
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => _showTemplateDetails(template),
+                    child: const Text('View'),
+                  ),
+                ),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _useTemplate(template),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: typeColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    child: const Text('Use'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getReminderStatusColor(ReminderStatus status) {
+    switch (status) {
+      case ReminderStatus.pending:
+        return Colors.orange;
+      case ReminderStatus.sent:
+        return Colors.green;
+      case ReminderStatus.failed:
+        return Colors.red;
+      case ReminderStatus.cancelled:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getReminderTypeIcon(ReminderType type) {
+    switch (type) {
+      case ReminderType.vaccinationExpiry:
+        return Icons.medical_services;
+      case ReminderType.upcomingBooking:
+        return Icons.schedule;
+      case ReminderType.checkInPrep:
+        return Icons.login;
+      case ReminderType.checkOut:
+        return Icons.logout;
+      case ReminderType.loyaltyPointsExpiry:
+        return Icons.card_giftcard;
+      case ReminderType.birthday:
+        return Icons.cake;
+      case ReminderType.followUp:
+        return Icons.follow_the_signs;
+      case ReminderType.custom:
+        return Icons.message;
+    }
+  }
+
+  IconData _getReminderChannelIcon(ReminderChannel channel) {
+    switch (channel) {
+      case ReminderChannel.email:
+        return Icons.email;
+      case ReminderChannel.sms:
+        return Icons.sms;
+      case ReminderChannel.whatsapp:
+        return Icons.chat;
+      case ReminderChannel.push:
+        return Icons.notifications;
+    }
+  }
+
+  Color _getTemplateTypeColor(TemplateType type) {
+    switch (type) {
+      case TemplateType.email:
+        return Colors.blue;
+      case TemplateType.sms:
+        return Colors.green;
+      case TemplateType.whatsapp:
+        return Colors.green;
+      case TemplateType.push:
+        return Colors.purple;
+    }
+  }
+
+  IconData _getTemplateCategoryIcon(TemplateCategory category) {
+    switch (category) {
+      case TemplateCategory.booking:
+        return Icons.schedule;
+      case TemplateCategory.vaccination:
+        return Icons.medical_services;
+      case TemplateCategory.loyalty:
+        return Icons.card_giftcard;
+      case TemplateCategory.marketing:
+        return Icons.campaign;
+      case TemplateCategory.reminder:
+        return Icons.notifications;
+      case TemplateCategory.notification:
+        return Icons.info;
+    }
+  }
+
+  void _handleReminderAction(String action, AutomatedReminder reminder) {
+    switch (action) {
+      case 'view':
+        _showReminderDetails(reminder);
+        break;
+      case 'edit':
+        _editReminder(reminder);
+        break;
+      case 'send_now':
+        _sendReminderNow(reminder);
+        break;
+      case 'cancel':
+        _cancelReminder(reminder);
+        break;
+    }
+  }
+
+  void _showReminderDetails(AutomatedReminder reminder) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(reminder.subject),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailRow('Type', reminder.type.name),
+              _buildDetailRow('Status', reminder.status.name),
+              _buildDetailRow('Channel', reminder.channel.name),
+              _buildDetailRow('Scheduled At', _formatDateTime(reminder.scheduledAt)),
+              if (reminder.sentAt != null)
+                _buildDetailRow('Sent At', _formatDateTime(reminder.sentAt!)),
+              _buildDetailRow('Retry Count', '${reminder.retryCount}'),
+              if (reminder.errorMessage != null)
+                _buildDetailRow('Error', reminder.errorMessage!),
+              const SizedBox(height: 16),
+              const Text('Message:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(reminder.message),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editReminder(AutomatedReminder reminder) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Edit reminder: ${reminder.subject}')),
+    );
+  }
+
+  void _sendReminderNow(AutomatedReminder reminder) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Sending reminder now: ${reminder.subject}')),
+    );
+  }
+
+  void _cancelReminder(AutomatedReminder reminder) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Cancelling reminder: ${reminder.subject}')),
+    );
+  }
+
+  void _showTemplateDetails(CommunicationTemplate template) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(template.name),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailRow('Type', template.type.name),
+              _buildDetailRow('Category', template.category.name),
+              _buildDetailRow('Subject', template.subject),
+              _buildDetailRow('Active', template.isActive ? 'Yes' : 'No'),
+              _buildDetailRow('Created', _formatDateTime(template.createdAt)),
+              const SizedBox(height: 16),
+              const Text('Content:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(template.content),
+              if (template.variables.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text('Variables:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...template.variables.entries.map((entry) => 
+                  _buildDetailRow(entry.key, entry.value)
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _useTemplate(CommunicationTemplate template) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Using template: ${template.name}')),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Text(value),
+          ),
         ],
       ),
     );
@@ -5416,27 +6388,539 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Customer Value Metrics
           _buildSectionTitle('Customer Value Metrics'),
           const SizedBox(height: 16),
           
-          Row(
-            children: [
-              Expanded(child: _buildInfoCard('Customer Lifetime Value', '\$${widget.customer.totalSpent?.toStringAsFixed(2) ?? '0.00'}', Icons.trending_up)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildInfoCard('Average Transaction', '\$${_calculateAverageTransaction()}', Icons.analytics)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildInfoCard('Visit Frequency', '2.3 visits/month', Icons.calendar_today)),
-            ],
+          FutureBuilder<List<PaymentTransaction>>(
+            future: _paymentsFuture,
+            builder: (context, paymentSnapshot) {
+              if (paymentSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final payments = paymentSnapshot.data ?? [];
+              final totalSpent = payments.fold<double>(0, (sum, payment) => sum + payment.amount);
+              final averageTransaction = payments.isNotEmpty ? totalSpent / payments.length : 0.0;
+              final transactionCount = payments.length;
+              
+              return Row(
+                children: [
+                  Expanded(child: _buildInfoCard('Total Spent', '\$${totalSpent.toStringAsFixed(2)}', Icons.trending_up)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Avg Transaction', '\$${averageTransaction.toStringAsFixed(2)}', Icons.analytics)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Total Transactions', '$transactionCount', Icons.receipt)),
+                ],
+              );
+            },
           ),
           
           const SizedBox(height: 32),
-          _buildSectionTitle('Service Utilization'),
+          
+          // Service Analytics
+          _buildSectionTitle('Service Analytics'),
           const SizedBox(height: 16),
           
-          _buildServiceUtilizationChart(),
+          FutureBuilder<List<Booking>>(
+            future: _bookingsFuture,
+            builder: (context, bookingSnapshot) {
+              if (bookingSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final bookings = bookingSnapshot.data ?? [];
+              final completedBookings = bookings.where((b) => b.status == BookingStatus.completed).length;
+              final cancelledBookings = bookings.where((b) => b.status == BookingStatus.cancelled).length;
+              final upcomingBookings = bookings.where((b) => b.status == BookingStatus.confirmed).length;
+              
+              return Row(
+                children: [
+                  Expanded(child: _buildInfoCard('Completed Services', '$completedBookings', Icons.check_circle)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Cancelled Services', '$cancelledBookings', Icons.cancel)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Upcoming Services', '$upcomingBookings', Icons.schedule)),
+                ],
+              );
+            },
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Pet Health Analytics
+          _buildSectionTitle('Pet Health Analytics'),
+          const SizedBox(height: 16),
+          
+          FutureBuilder<List<Vaccination>>(
+            future: _vaccinationsFuture,
+            builder: (context, vaccinationSnapshot) {
+              if (vaccinationSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final vaccinations = vaccinationSnapshot.data ?? [];
+              final upToDateVaccinations = vaccinations.where((v) => v.status == VaccinationStatus.upToDate).length;
+              final expiredVaccinations = vaccinations.where((v) => v.status == VaccinationStatus.expired).length;
+              final dueSoonVaccinations = vaccinations.where((v) => v.status == VaccinationStatus.dueSoon).length;
+              
+              return Row(
+                children: [
+                  Expanded(child: _buildInfoCard('Up-to-Date', '$upToDateVaccinations', Icons.health_and_safety)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Expired', '$expiredVaccinations', Icons.warning)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Due Soon', '$dueSoonVaccinations', Icons.schedule)),
+                ],
+              );
+            },
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Loyalty Analytics
+          _buildSectionTitle('Loyalty Analytics'),
+          const SizedBox(height: 16),
+          
+          FutureBuilder<List<LoyaltyTransaction>>(
+            future: _loyaltyTransactionsFuture,
+            builder: (context, loyaltySnapshot) {
+              if (loyaltySnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final loyaltyTransactions = loyaltySnapshot.data ?? [];
+              final totalPoints = loyaltyTransactions.fold<int>(0, (sum, tx) => sum + tx.points);
+              final earnedPoints = loyaltyTransactions.where((tx) => tx.type == LoyaltyTransactionType.earned).fold<int>(0, (sum, tx) => sum + tx.points);
+              final redeemedPoints = loyaltyTransactions.where((tx) => tx.type == LoyaltyTransactionType.redeemed).fold<int>(0, (sum, tx) => sum + tx.points);
+              
+              return Row(
+                children: [
+                  Expanded(child: _buildInfoCard('Total Points', '$totalPoints', Icons.card_giftcard)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Points Earned', '$earnedPoints', Icons.add_circle)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Points Redeemed', '$redeemedPoints', Icons.remove_circle)),
+                ],
+              );
+            },
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Communication Analytics
+          _buildSectionTitle('Communication Analytics'),
+          const SizedBox(height: 16),
+          
+          FutureBuilder<List<AutomatedReminder>>(
+            future: _remindersFuture,
+            builder: (context, reminderSnapshot) {
+              if (reminderSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final reminders = reminderSnapshot.data ?? [];
+              final sentReminders = reminders.where((r) => r.status == ReminderStatus.sent).length;
+              final pendingReminders = reminders.where((r) => r.status == ReminderStatus.pending).length;
+              final failedReminders = reminders.where((r) => r.status == ReminderStatus.failed).length;
+              
+              return Row(
+                children: [
+                  Expanded(child: _buildInfoCard('Sent Reminders', '$sentReminders', Icons.send)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Pending Reminders', '$pendingReminders', Icons.schedule)),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildInfoCard('Failed Reminders', '$failedReminders', Icons.error)),
+                ],
+              );
+            },
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // Service Usage Trends
+          _buildSectionTitle('Service Usage Trends'),
+          const SizedBox(height: 16),
+          
+          _buildServiceUsageChart(),
+          
+          const SizedBox(height: 32),
+          
+          // Payment Method Analytics
+          _buildSectionTitle('Payment Method Analytics'),
+          const SizedBox(height: 16),
+          
+          _buildPaymentMethodChart(),
+          
+          const SizedBox(height: 32),
+          
+          // Customer Engagement Score
+          _buildSectionTitle('Customer Engagement Score'),
+          const SizedBox(height: 16),
+          
+          _buildEngagementScoreCard(),
         ],
       ),
     );
+  }
+
+  // Analytics Helper Methods
+  Widget _buildServiceUsageChart() {
+    return FutureBuilder<List<Booking>>(
+      future: _bookingsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final bookings = snapshot.data ?? [];
+        final serviceCounts = <String, int>{};
+        
+        for (final booking in bookings) {
+          final serviceName = booking.type.name; // Use booking type as service name
+          serviceCounts[serviceName] = (serviceCounts[serviceName] ?? 0) + 1;
+        }
+        
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Most Used Services',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                if (serviceCounts.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Text('No service usage data available'),
+                    ),
+                  )
+                else
+                  Builder(
+                    builder: (context) {
+                      final sortedEntries = serviceCounts.entries.toList()
+                        ..sort((a, b) => b.value.compareTo(a.value));
+                      final maxCount = serviceCounts.values.reduce((a, b) => a > b ? a : b);
+                      final topServices = sortedEntries.take(5).toList();
+                      
+                      return Column(
+                        children: topServices.map((entry) => 
+                          _buildServiceUsageBar(entry.key, entry.value, maxCount)
+                        ).toList(),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildServiceUsageBar(String serviceName, int count, int maxCount) {
+    final percentage = maxCount > 0 ? count / maxCount : 0.0;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  serviceName,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ),
+              Text(
+                '$count',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: percentage,
+            backgroundColor: Colors.grey[300],
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            minHeight: 8,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodChart() {
+    return FutureBuilder<List<PaymentTransaction>>(
+      future: _paymentsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final payments = snapshot.data ?? [];
+        final paymentMethodCounts = <PaymentMethod, int>{};
+        
+        for (final payment in payments) {
+          paymentMethodCounts[payment.paymentMethod] = (paymentMethodCounts[payment.paymentMethod] ?? 0) + 1;
+        }
+        
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Payment Method Preferences',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                if (paymentMethodCounts.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Text('No payment data available'),
+                    ),
+                  )
+                else
+                  ...paymentMethodCounts.entries.map((entry) => 
+                    _buildPaymentMethodRow(entry.key, entry.value, payments.length)
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPaymentMethodRow(PaymentMethod method, int count, int totalPayments) {
+    final percentage = totalPayments > 0 ? (count / totalPayments * 100) : 0.0;
+    final icon = _getPaymentMethodIcon(method);
+    final color = _getPaymentMethodColor(method);
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _getPaymentMethodDisplayName(method),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Text(
+            '$count (${percentage.toStringAsFixed(1)}%)',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEngagementScoreCard() {
+    return FutureBuilder(
+      future: Future.wait([_paymentsFuture, _bookingsFuture, _loyaltyTransactionsFuture, _remindersFuture]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final results = snapshot.data as List;
+        final payments = results[0] as List<PaymentTransaction>;
+        final bookings = results[1] as List<Booking>;
+        final loyaltyTransactions = results[2] as List<LoyaltyTransaction>;
+        final reminders = results[3] as List<AutomatedReminder>;
+        
+        // Calculate engagement score (0-100)
+        final score = _calculateEngagementScore(payments, bookings, loyaltyTransactions, reminders);
+        final scoreColor = _getEngagementScoreColor(score);
+        final scoreLabel = _getEngagementScoreLabel(score);
+        
+        return Card(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [scoreColor.withOpacity(0.1), scoreColor.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Customer Engagement Score',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        scoreLabel,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Text(
+                            '$score',
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: scoreColor,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '/ 100',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                CircularProgressIndicator(
+                  value: score / 100,
+                  backgroundColor: Colors.grey[300],
+                  valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+                  strokeWidth: 8,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  int _calculateEngagementScore(List<PaymentTransaction> payments, List<Booking> bookings, List<LoyaltyTransaction> loyaltyTransactions, List<AutomatedReminder> reminders) {
+    int score = 0;
+    
+    // Payment frequency (0-30 points)
+    final paymentCount = payments.length;
+    if (paymentCount >= 10) score += 30;
+    else if (paymentCount >= 5) score += 20;
+    else if (paymentCount >= 2) score += 10;
+    
+    // Service usage (0-25 points)
+    final completedBookings = bookings.where((b) => b.status == BookingStatus.completed).length;
+    if (completedBookings >= 5) score += 25;
+    else if (completedBookings >= 3) score += 15;
+    else if (completedBookings >= 1) score += 10;
+    
+    // Loyalty engagement (0-25 points)
+    final loyaltyCount = loyaltyTransactions.length;
+    if (loyaltyCount >= 5) score += 25;
+    else if (loyaltyCount >= 3) score += 15;
+    else if (loyaltyCount >= 1) score += 10;
+    
+    // Communication engagement (0-20 points)
+    final sentReminders = reminders.where((r) => r.status == ReminderStatus.sent).length;
+    if (sentReminders >= 3) score += 20;
+    else if (sentReminders >= 1) score += 10;
+    
+    return score.clamp(0, 100);
+  }
+
+  Color _getEngagementScoreColor(int score) {
+    if (score >= 80) return Colors.green;
+    if (score >= 60) return Colors.orange;
+    if (score >= 40) return Colors.amber;
+    return Colors.red;
+  }
+
+  String _getEngagementScoreLabel(int score) {
+    if (score >= 80) return 'Highly Engaged';
+    if (score >= 60) return 'Well Engaged';
+    if (score >= 40) return 'Moderately Engaged';
+    if (score >= 20) return 'Low Engagement';
+    return 'Minimal Engagement';
+  }
+
+  IconData _getPaymentMethodIcon(PaymentMethod method) {
+    // Since PaymentMethod is a class, we need to check its type property
+    switch (method.type) {
+      case PaymentType.cash:
+        return Icons.payments;
+      case PaymentType.creditCard:
+      case PaymentType.debitCard:
+        return Icons.credit_card;
+      case PaymentType.digitalWallet:
+        return Icons.account_balance_wallet;
+      case PaymentType.bankTransfer:
+        return Icons.account_balance;
+      case PaymentType.voucher:
+        return Icons.card_giftcard;
+      case PaymentType.deposit:
+        return Icons.account_balance_wallet;
+      case PaymentType.partialPayment:
+        return Icons.payment;
+    }
+  }
+
+  Color _getPaymentMethodColor(PaymentMethod method) {
+    switch (method.type) {
+      case PaymentType.cash:
+        return Colors.green;
+      case PaymentType.creditCard:
+      case PaymentType.debitCard:
+        return Colors.blue;
+      case PaymentType.digitalWallet:
+        return Colors.purple;
+      case PaymentType.bankTransfer:
+        return Colors.orange;
+      case PaymentType.voucher:
+        return Colors.pink;
+      case PaymentType.deposit:
+        return Colors.teal;
+      case PaymentType.partialPayment:
+        return Colors.amber;
+    }
+  }
+
+  String _getPaymentMethodDisplayName(PaymentMethod method) {
+    switch (method.type) {
+      case PaymentType.cash:
+        return 'Cash';
+      case PaymentType.creditCard:
+        return 'Credit Card';
+      case PaymentType.debitCard:
+        return 'Debit Card';
+      case PaymentType.digitalWallet:
+        return 'Digital Wallet';
+      case PaymentType.bankTransfer:
+        return 'Bank Transfer';
+      case PaymentType.voucher:
+        return 'Voucher';
+      case PaymentType.deposit:
+        return 'Deposit';
+      case PaymentType.partialPayment:
+        return 'Partial Payment';
+    }
   }
 
   // Helper Methods
@@ -5524,11 +7008,12 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
     );
   }
 
-  Widget _buildDetailedPetCard(Pet pet) {
+  Widget _buildRedesignedPetCard(Pet pet) {
     return Card(
       elevation: 4,
+      margin: const EdgeInsets.only(bottom: 16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -5536,28 +7021,28 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
             Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
                     color: _getPetTypeColor(pet.type).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(25),
                   ),
                   child: Icon(
                     _getPetTypeIcon(pet.type),
                     color: _getPetTypeColor(pet.type),
-                    size: 24,
+                    size: 28,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         pet.name,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 20,
                           color: Colors.black87,
                         ),
                       ),
@@ -5565,7 +7050,7 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
                         '${pet.type.name} • ${pet.breed ?? 'Unknown'}',
                         style: TextStyle(
                           color: Colors.grey[700],
-                          fontSize: 12,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -5574,36 +7059,186 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
               ],
             ),
             
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             
-            // Pet details
-            _buildPetDetailRow('Age', '${pet.age ?? 'Unknown'} years'),
-            _buildPetDetailRow('Weight', '${pet.weight ?? 'Unknown'} ${pet.weightUnit ?? ''}'),
-            _buildPetDetailRow('Gender', pet.gender.name),
-            _buildPetDetailRow('Size', pet.size.name),
+            // Pet details in two columns
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPetDetailRow('Age', '${pet.age ?? 'Unknown'} years'),
+                      _buildPetDetailRow('Weight', '${pet.weight ?? 'Unknown'} ${pet.weightUnit ?? ''}'),
+                      _buildPetDetailRow('Gender', pet.gender.name),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 32),
+                // Right column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPetDetailRow('Size', pet.size.name),
+                      _buildPetDetailRow('Color', pet.color ?? 'Unknown'),
+                      _buildPetDetailRow('Microchip', pet.microchipNumber ?? 'None'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
+            
+            // Vaccination information
+            _buildVaccinationSection(pet),
+            
+            const SizedBox(height: 24),
             
             // Action buttons
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _showPetDetails(pet),
-                    child: const Text('Details'),
-                  ),
+                TextButton.icon(
+                  onPressed: () => _showPetDetailsDialog(pet),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View Details'),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _showPetVaccinations(pet),
-                    child: const Text('Vaccinations'),
-                  ),
+                TextButton.icon(
+                  onPressed: () => _showEditPetDialog(pet),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Edit'),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: () => _showPetVaccinationsDialog(pet),
+                  icon: const Icon(Icons.vaccines, size: 16),
+                  label: const Text('Vaccinations'),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildVaccinationSection(Pet pet) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Row(
+          children: [
+            Icon(Icons.vaccines, color: Colors.blue[700], size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Vaccination Records',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue[700],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // Vaccination list
+        FutureBuilder<List<Vaccination>>(
+          future: _vaccinationDao.getByPetId(pet.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            
+            if (snapshot.hasError) {
+              return Text(
+                'Error loading vaccinations: ${snapshot.error}',
+                style: TextStyle(color: Colors.red[700]),
+              );
+            }
+            
+            final vaccinations = snapshot.data ?? [];
+            
+            if (vaccinations.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'No vaccination records found',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              );
+            }
+            
+            return Column(
+              children: vaccinations.map((vaccination) => _buildVaccinationItem(vaccination)).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVaccinationItem(Vaccination vaccination) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle, color: Colors.green[600], size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  vaccination.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  'Administered: ${_formatDate(vaccination.administeredDate)}',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 12,
+                  ),
+                ),
+                if (vaccination.expiryDate != null)
+                  Text(
+                    'Expires: ${_formatDate(vaccination.expiryDate!)}',
+                    style: TextStyle(
+                      color: vaccination.expiryDate!.isBefore(DateTime.now()) 
+                          ? Colors.red[600] 
+                          : Colors.grey[700],
+                      fontSize: 12,
+                      fontWeight: vaccination.expiryDate!.isBefore(DateTime.now()) 
+                          ? FontWeight.bold 
+                          : FontWeight.normal,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -5868,28 +7503,43 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
   }
 
   // Calculation methods
-  double _calculateTotalTransactions(List<Map<String, dynamic>> transactions) {
-    return transactions.fold(0.0, (sum, t) => sum + (t['amount'] ?? 0.0));
+  double _calculateTotalTransactions(List<POSTransaction> transactions) {
+    return transactions.fold(0.0, (sum, transaction) => sum + transaction.totalAmount);
   }
 
-  List<Map<String, dynamic>> _getThisMonthTransactions(List<Map<String, dynamic>> transactions) {
-    return transactions.where((t) => t['date']?.startsWith('2024-01') == true).toList();
+  List<POSTransaction> _getThisMonthTransactions(List<POSTransaction> transactions) {
+    final now = DateTime.now();
+    final thisMonth = DateTime(now.year, now.month);
+    return transactions.where((transaction) {
+      return transaction.completedAt.isAfter(thisMonth.subtract(const Duration(days: 1)));
+    }).toList();
   }
 
-  double _calculateTotalPayments(List<Map<String, dynamic>> payments) {
-    return payments.fold(0.0, (sum, p) => sum + (p['amount'] ?? 0.0));
+  double _calculateTotalPayments(List<PaymentTransaction> payments) {
+    return payments.fold(0.0, (sum, payment) => sum + payment.amount);
   }
 
-  List<String> _getUniquePaymentMethods(List<Map<String, dynamic>> payments) {
-    return payments.map((p) => p['method'] ?? '').where((m) => m.isNotEmpty).toSet().toList().cast<String>();
+  List<String> _getUniquePaymentMethods(List<PaymentTransaction> payments) {
+    return payments.map((p) => p.paymentMethod.name).toSet().toList();
   }
 
-  List<Map<String, dynamic>> _getThisMonthServices(List<Map<String, dynamic>> services) {
-    return services.where((s) => s['date']?.startsWith('2024-01') == true).toList();
+  List<Booking> _getThisMonthBookings(List<Booking> bookings) {
+    final now = DateTime.now();
+    final thisMonth = DateTime(now.year, now.month, 1);
+    final nextMonth = DateTime(now.year, now.month + 1, 1);
+    
+    return bookings.where((booking) {
+      return booking.checkInDate.isAfter(thisMonth.subtract(const Duration(days: 1))) &&
+             booking.checkInDate.isBefore(nextMonth);
+    }).toList();
   }
 
-  List<Map<String, dynamic>> _getUpcomingServices(List<Map<String, dynamic>> services) {
-    return services.where((s) => s['date']?.compareTo('2024-01-20') > 0).toList();
+  List<Booking> _getUpcomingBookings(List<Booking> bookings) {
+    final now = DateTime.now();
+    return bookings.where((booking) {
+      return booking.checkInDate.isAfter(now) && 
+             (booking.status == BookingStatus.confirmed || booking.status == BookingStatus.pending);
+    }).toList();
   }
 
   String _calculateAverageTransaction() {
@@ -5911,12 +7561,124 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
     // Implementation for showing pet vaccinations
   }
 
-  void _scheduleAppointment() {
-    // Implementation for scheduling appointment
-  }
+
 
   void _showEditCustomerDialog(Customer customer) {
-    // Implementation for editing customer
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Edit Customer Profile'),
+          content: SizedBox(
+            width: 500,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // First Name
+                  TextFormField(
+                    initialValue: customer.firstName,
+                    decoration: const InputDecoration(
+                      labelText: 'First Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      // Handle first name change
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Last Name
+                  TextFormField(
+                    initialValue: customer.lastName,
+                    decoration: const InputDecoration(
+                      labelText: 'Last Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      // Handle last name change
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Email
+                  TextFormField(
+                    initialValue: customer.email,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      // Handle email change
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Phone
+                  TextFormField(
+                    initialValue: customer.phoneNumber,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) {
+                      // Handle phone change
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Address
+                  TextFormField(
+                    initialValue: customer.address ?? '',
+                    decoration: const InputDecoration(
+                      labelText: 'Address',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    onChanged: (value) {
+                      // Handle address change
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Notes
+                  TextFormField(
+                    initialValue: customer.notes ?? '',
+                    decoration: const InputDecoration(
+                      labelText: 'Notes',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    onChanged: (value) {
+                      // Handle notes change
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // TODO: Implement save functionality
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Customer profile updated successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   String _formatDate(DateTime date) {
@@ -6005,84 +7767,2094 @@ class _CustomerDetailsDialogState extends ConsumerState<_CustomerDetailsDialog>
   }
 
   Widget _buildVaccinationsTab() {
-    return Container(
-      color: Colors.blue[50], // Debug background color
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Pet Vaccinations',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+    return FutureBuilder<List<Vaccination>>(
+      future: _vaccinationsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        
+        final vaccinations = snapshot.data ?? [];
+        
+        return Column(
+          children: [
+            // Summary cards
+            Row(
+              children: [
+                Expanded(child: _buildSummaryCard('Total Vaccinations', vaccinations.length.toString(), Icons.vaccines, Colors.green)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('Upcoming', '${_getUpcomingVaccinations(vaccinations).length}', Icons.schedule, Colors.orange)),
+                const SizedBox(width: 16),
+                Expanded(child: _buildSummaryCard('Overdue', '${_getOverdueVaccinations(vaccinations).length}', Icons.warning, Colors.red)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            // Search and filter bar
+            _buildVaccinationSearchBar(),
+            const SizedBox(height: 16),
+            
+            // Vaccinations list
+            Expanded(
+              child: vaccinations.isEmpty
+                  ? const Center(child: Text('No vaccinations found'))
+                  : ListView.builder(
+                      itemCount: vaccinations.length,
+                      itemBuilder: (context, index) => _buildVaccinationCard(vaccinations[index]),
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showScheduleAppointmentDialog() {
+    final _formKey = GlobalKey<FormState>();
+    final _serviceController = TextEditingController();
+    final _notesController = TextEditingController();
+    DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Schedule Appointment'),
+        content: SizedBox(
+          width: 500,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _serviceController,
+                    decoration: const InputDecoration(
+                      labelText: 'Service Type',
+                      hintText: 'e.g., Grooming, Boarding, Check-up',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a service type';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ListTile(
+                          title: const Text('Date'),
+                          subtitle: Text(_formatDate(_selectedDate)),
+                          trailing: const Icon(Icons.calendar_today),
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: _selectedDate,
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                            );
+                            if (date != null) {
+                              setState(() {
+                                _selectedDate = date;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ListTile(
+                          title: const Text('Time'),
+                          subtitle: Text(_selectedTime.format(context)),
+                          trailing: const Icon(Icons.access_time),
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: _selectedTime,
+                            );
+                            if (time != null) {
+                              setState(() {
+                                _selectedTime = time;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _notesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (Optional)',
+                      hintText: 'Any special instructions or notes',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          if (widget.customer.pets?.isEmpty ?? true)
-            Center(
-              child: Text(
-                'No pets found for this customer.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[700],
-                ),
-              ),
-            )
-          else
-            SizedBox(
-              height: 400,
-              child: ListView.builder(
-                itemCount: widget.customer.pets?.length ?? 0,
-                itemBuilder: (context, index) {
-                  final pet = widget.customer.pets![index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ExpansionTile(
-                      title: Text(
-                        pet.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${pet.type.name} • ${pet.breed ?? 'Unknown breed'}',
-                        style: TextStyle(
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Vaccination Records',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Vaccination records will be displayed here.',
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                // Here you would typically save the appointment
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Appointment scheduled for ${widget.customer.firstName} ${widget.customer.lastName} on ${_formatDate(_selectedDate)} at ${_selectedTime.format(context)}'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Schedule'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSendMessageDialog() {
+    final _formKey = GlobalKey<FormState>();
+    final _subjectController = TextEditingController();
+    final _messageController = TextEditingController();
+    String _selectedMethod = 'email';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Send Message'),
+        content: SizedBox(
+          width: 500,
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _selectedMethod,
+                    decoration: const InputDecoration(
+                      labelText: 'Contact Method',
+                      border: OutlineInputBorder(),
                     ),
-                  );
-                },
+                    items: const [
+                      DropdownMenuItem(value: 'email', child: Text('Email')),
+                      DropdownMenuItem(value: 'sms', child: Text('SMS')),
+                      DropdownMenuItem(value: 'whatsapp', child: Text('WhatsApp')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedMethod = value!;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _subjectController,
+                    decoration: const InputDecoration(
+                      labelText: 'Subject',
+                      hintText: 'Message subject',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a subject';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      labelText: 'Message',
+                      hintText: 'Type your message here',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 5,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a message';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
               ),
             ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                // Here you would typically send the message
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Message sent to ${widget.customer.firstName} ${widget.customer.lastName} via ${_selectedMethod.toUpperCase()}'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search transactions...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              onChanged: (value) {
+                // TODO: Implement search functionality
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          DropdownButton<String>(
+            hint: const Text('Filter by Status'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All')),
+              DropdownMenuItem(value: 'completed', child: Text('Completed')),
+              DropdownMenuItem(value: 'refunded', child: Text('Refunded')),
+              DropdownMenuItem(value: 'voided', child: Text('Voided')),
+            ],
+            onChanged: (value) {
+              // TODO: Implement filter functionality
+            },
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              // TODO: Implement export functionality
+            },
+            icon: const Icon(Icons.download),
+            label: const Text('Export'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPOSTransactionCard(POSTransaction transaction) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Transaction #${transaction.receiptNumber ?? transaction.id.substring(0, 8)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${transaction.items.length} items • ${transaction.paymentMethod}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '\$${transaction.totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildTransactionStatusChip(transaction.status),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDateTime(transaction.completedAt),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                if (transaction.cashierName != null) ...[
+                  const SizedBox(width: 16),
+                  Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Cashier: ${transaction.cashierName}',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (transaction.items.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Items:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    ...transaction.items.take(3).map((item) => Text(
+                      '• ${item.name} x${item.quantity}',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 11,
+                      ),
+                    )),
+                    if (transaction.items.length > 3)
+                      Text(
+                        '... and ${transaction.items.length - 3} more items',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showTransactionDetails(transaction),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View Details'),
+                ),
+                const SizedBox(width: 8),
+                if (transaction.status == 'completed')
+                  TextButton.icon(
+                    onPressed: () => _showRefundDialog(transaction),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Refund'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionStatusChip(String status) {
+    Color color;
+    switch (status.toLowerCase()) {
+      case 'completed':
+        color = Colors.green;
+        break;
+      case 'refunded':
+        color = Colors.orange;
+        break;
+      case 'voided':
+        color = Colors.red;
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  void _showTransactionDetails(POSTransaction transaction) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Transaction #${transaction.receiptNumber ?? transaction.id.substring(0, 8)}'),
+        content: SizedBox(
+          width: 600,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTransactionDetailRow('Date', _formatDateTime(transaction.completedAt)),
+                _buildTransactionDetailRow('Status', transaction.status),
+                _buildTransactionDetailRow('Payment Method', transaction.paymentMethod),
+                _buildTransactionDetailRow('Total Amount', '\$${transaction.totalAmount.toStringAsFixed(2)}'),
+                if (transaction.subtotal != null)
+                  _buildTransactionDetailRow('Subtotal', '\$${transaction.subtotal!.toStringAsFixed(2)}'),
+                if (transaction.taxAmount != null)
+                  _buildTransactionDetailRow('Tax', '\$${transaction.taxAmount!.toStringAsFixed(2)}'),
+                if (transaction.discountAmount != null)
+                  _buildTransactionDetailRow('Discount', '\$${transaction.discountAmount!.toStringAsFixed(2)}'),
+                if (transaction.cashierName != null)
+                  _buildTransactionDetailRow('Cashier', transaction.cashierName!),
+                const SizedBox(height: 16),
+                const Text(
+                  'Items:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                ...transaction.items.map((item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text('${item.name} x${item.quantity}'),
+                      ),
+                      Text('\$${(item.price * item.quantity).toStringAsFixed(2)}'),
+                    ],
+                  ),
+                )),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          Text(value),
+        ],
+      ),
+    );
+  }
+
+  void _showRefundDialog(POSTransaction transaction) {
+    final _reasonController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Refund Transaction'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Are you sure you want to refund this transaction?'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Refund Reason',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: Implement refund functionality
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Refund functionality will be implemented')),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Process Refund'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPetDetailsDialog(Pet pet) {
+    showDialog(
+      context: context,
+      builder: (context) => PetDetailsDialog(pet: pet),
+    );
+  }
+
+  void _showEditPetDialog(Pet pet) {
+    showDialog(
+      context: context,
+      builder: (context) => EditPetDialog(
+        pet: pet,
+        onUpdate: (updatedPet) async {
+          await _petDao.update(updatedPet);
+          setState(() {
+            _petsFuture = _petDao.getByCustomerId(widget.customer.id);
+          });
+        },
+      ),
+    );
+  }
+
+  void _showPetVaccinationsDialog(Pet pet) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${pet.name} - Vaccination Records'),
+        content: SizedBox(
+          width: 600,
+          height: 400,
+          child: FutureBuilder<List<Vaccination>>(
+            future: _vaccinationDao.getByPetId(pet.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              
+              final vaccinations = snapshot.data ?? [];
+              
+              if (vaccinations.isEmpty) {
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.vaccines, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text('No vaccination records found'),
+                    ],
+                  ),
+                );
+              }
+              
+              return Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${vaccinations.length} vaccination records'),
+                      ElevatedButton.icon(
+                        onPressed: () => _showAddVaccinationDialog(pet),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('Add Vaccination'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: vaccinations.length,
+                      itemBuilder: (context, index) {
+                        final vaccination = vaccinations[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.vaccines,
+                              color: vaccination.isExpired ? Colors.red : Colors.green,
+                            ),
+                            title: Text(vaccination.name),
+                            subtitle: Text(
+                              'Administered: ${_formatDate(vaccination.administeredDate)}\n'
+                              'Expires: ${_formatDate(vaccination.expiryDate)}',
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: () => _showVaccinationDetailsDialog(vaccination),
+                                  icon: const Icon(Icons.visibility),
+                                  tooltip: 'View Details',
+                                ),
+                                IconButton(
+                                  onPressed: () => _showEditVaccinationDialog(vaccination),
+                                  icon: const Icon(Icons.edit),
+                                  tooltip: 'Edit',
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddVaccinationDialog(Pet pet) {
+    showDialog(
+      context: context,
+      builder: (context) => EditVaccinationDialog(
+        vaccination: Vaccination(
+          id: '',
+          petId: pet.id,
+          petName: pet.name,
+          customerId: widget.customer.id,
+          customerName: widget.customer.fullName,
+          type: VaccinationType.core,
+          name: '',
+          administeredDate: DateTime.now(),
+          expiryDate: DateTime.now().add(const Duration(days: 365)),
+          administeredBy: '',
+          clinicName: '',
+          status: VaccinationStatus.upToDate,
+        ),
+        onUpdate: (vaccination) async {
+          await _vaccinationDao.create(vaccination);
+          setState(() {
+            _petsFuture = _petDao.getByCustomerId(widget.customer.id);
+          });
+        },
+      ),
+    );
+  }
+
+  void _showVaccinationDetailsDialog(Vaccination vaccination) {
+    showDialog(
+      context: context,
+      builder: (context) => VaccinationDetailsDialog(vaccination: vaccination),
+    );
+  }
+
+
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildPaymentSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search payments...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              onChanged: (value) {
+                // TODO: Implement search functionality
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          DropdownButton<String>(
+            hint: const Text('Filter by Status'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All')),
+              DropdownMenuItem(value: 'completed', child: Text('Completed')),
+              DropdownMenuItem(value: 'pending', child: Text('Pending')),
+              DropdownMenuItem(value: 'failed', child: Text('Failed')),
+              DropdownMenuItem(value: 'refunded', child: Text('Refunded')),
+            ],
+            onChanged: (value) {
+              // TODO: Implement filter functionality
+            },
+          ),
+          const SizedBox(width: 16),
+          DropdownButton<String>(
+            hint: const Text('Filter by Method'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All Methods')),
+              DropdownMenuItem(value: 'cash', child: Text('Cash')),
+              DropdownMenuItem(value: 'credit_card', child: Text('Credit Card')),
+              DropdownMenuItem(value: 'digital_wallet', child: Text('Digital Wallet')),
+              DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
+            ],
+            onChanged: (value) {
+              // TODO: Implement filter functionality
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentTransactionCard(PaymentTransaction payment) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Payment #${payment.id.substring(0, 8)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${payment.paymentMethod.name} • ${payment.type.name.toUpperCase()}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '\$${payment.amount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildPaymentStatusChip(payment.status),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDateTime(payment.createdAt),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                if (payment.processedBy != null) ...[
+                  const SizedBox(width: 16),
+                  Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Processed by: ${payment.processedBy}',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (payment.referenceNumber != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.receipt, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Ref: ${payment.referenceNumber}',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (payment.notes != null && payment.notes!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  payment.notes!,
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showPaymentDetails(payment),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View Details'),
+                ),
+                const SizedBox(width: 8),
+                if (payment.status == PaymentStatus.completed)
+                  TextButton.icon(
+                    onPressed: () => _showRefundPaymentDialog(payment),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Refund'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentStatusChip(PaymentStatus status) {
+    Color color;
+    switch (status) {
+      case PaymentStatus.completed:
+        color = Colors.green;
+        break;
+      case PaymentStatus.pending:
+        color = Colors.orange;
+        break;
+      case PaymentStatus.failed:
+        color = Colors.red;
+        break;
+      case PaymentStatus.refunded:
+        color = Colors.blue;
+        break;
+      case PaymentStatus.partiallyRefunded:
+        color = Colors.purple;
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        status.name.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  void _showPaymentDetails(PaymentTransaction payment) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Payment #${payment.id.substring(0, 8)}'),
+        content: SizedBox(
+          width: 600,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildPaymentDetailRow('Amount', '\$${payment.amount.toStringAsFixed(2)}'),
+                _buildPaymentDetailRow('Status', payment.status.name.toUpperCase()),
+                _buildPaymentDetailRow('Payment Method', payment.paymentMethod.name),
+                _buildPaymentDetailRow('Type', payment.type.name.toUpperCase()),
+                _buildPaymentDetailRow('Date', _formatDateTime(payment.createdAt)),
+                if (payment.processedAt != null)
+                  _buildPaymentDetailRow('Processed At', _formatDateTime(payment.processedAt!)),
+                if (payment.completedAt != null)
+                  _buildPaymentDetailRow('Completed At', _formatDateTime(payment.completedAt!)),
+                if (payment.referenceNumber != null)
+                  _buildPaymentDetailRow('Reference Number', payment.referenceNumber!),
+                if (payment.authorizationCode != null)
+                  _buildPaymentDetailRow('Authorization Code', payment.authorizationCode!),
+                if (payment.cardType != null)
+                  _buildPaymentDetailRow('Card Type', payment.cardType!),
+                if (payment.cardLast4 != null)
+                  _buildPaymentDetailRow('Card Last 4', payment.cardLast4!),
+                if (payment.processingFee != null)
+                  _buildPaymentDetailRow('Processing Fee', '\$${payment.processingFee!.toStringAsFixed(2)}'),
+                if (payment.taxAmount != null)
+                  _buildPaymentDetailRow('Tax Amount', '\$${payment.taxAmount!.toStringAsFixed(2)}'),
+                if (payment.currency != null)
+                  _buildPaymentDetailRow('Currency', payment.currency!),
+                if (payment.processedBy != null)
+                  _buildPaymentDetailRow('Processed By', payment.processedBy!),
+                if (payment.notes != null && payment.notes!.isNotEmpty)
+                  _buildPaymentDetailRow('Notes', payment.notes!),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          Text(value),
+        ],
+      ),
+    );
+  }
+
+  void _showRefundPaymentDialog(PaymentTransaction payment) {
+    final _reasonController = TextEditingController();
+    final _amountController = TextEditingController(text: payment.amount.toStringAsFixed(2));
+    double _refundAmount = payment.amount;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Refund Payment'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Original Amount: \$${payment.amount.toStringAsFixed(2)}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Refund Reason',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Text('Refund Amount: '),
+                Expanded(
+                  child: TextField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      _refundAmount = double.tryParse(value) ?? payment.amount;
+                    },
+                    decoration: const InputDecoration(
+                      prefixText: '\$',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: Implement refund functionality
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Refund of \$${_refundAmount.toStringAsFixed(2)} will be processed'),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Process Refund'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search bookings...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              onChanged: (value) {
+                // TODO: Implement search functionality
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          DropdownButton<String>(
+            hint: const Text('Filter by Status'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All')),
+              DropdownMenuItem(value: 'confirmed', child: Text('Confirmed')),
+              DropdownMenuItem(value: 'pending', child: Text('Pending')),
+              DropdownMenuItem(value: 'checkedIn', child: Text('Checked In')),
+              DropdownMenuItem(value: 'checkedOut', child: Text('Checked Out')),
+              DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
+            ],
+            onChanged: (value) {
+              // TODO: Implement filter functionality
+            },
+          ),
+          const SizedBox(width: 16),
+          DropdownButton<String>(
+            hint: const Text('Filter by Type'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All Types')),
+              DropdownMenuItem(value: 'standard', child: Text('Standard')),
+              DropdownMenuItem(value: 'extended', child: Text('Extended')),
+              DropdownMenuItem(value: 'grooming', child: Text('Grooming')),
+              DropdownMenuItem(value: 'medical', child: Text('Medical')),
+            ],
+            onChanged: (value) {
+              // TODO: Implement filter functionality
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingCard(Booking booking) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${booking.bookingNumber} • ${booking.petName}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${booking.type.name.toUpperCase()} • Room ${booking.roomNumber}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '\$${booking.totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildBookingStatusChip(booking.status),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  'Check-in: ${_formatDate(booking.checkInDate)}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  'Check-out: ${_formatDate(booking.checkOutDate)}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            if (booking.additionalServices != null && booking.additionalServices!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: booking.additionalServices!.map((service) => 
+                  Chip(
+                    label: Text(service),
+                    backgroundColor: Colors.blue[50],
+                    labelStyle: TextStyle(
+                      color: Colors.blue[700],
+                      fontSize: 10,
+                    ),
+                  ),
+                ).toList(),
+              ),
+            ],
+            if (booking.specialInstructions != null && booking.specialInstructions!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber[50],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: Colors.amber[700]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        booking.specialInstructions!,
+                        style: TextStyle(
+                          color: Colors.amber[700],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showBookingDetails(booking),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View Details'),
+                ),
+                const SizedBox(width: 8),
+                if (booking.status == BookingStatus.confirmed || booking.status == BookingStatus.pending)
+                  TextButton.icon(
+                    onPressed: () => _showModifyBookingDialog(booking),
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Modify'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.blue,
+                    ),
+                  ),
+                const SizedBox(width: 8),
+                if (booking.status == BookingStatus.confirmed || booking.status == BookingStatus.pending)
+                  TextButton.icon(
+                    onPressed: () => _showCancelBookingDialog(booking),
+                    icon: const Icon(Icons.cancel, size: 16),
+                    label: const Text('Cancel'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookingStatusChip(BookingStatus status) {
+    Color color;
+    switch (status) {
+      case BookingStatus.confirmed:
+        color = Colors.green;
+        break;
+      case BookingStatus.pending:
+        color = Colors.orange;
+        break;
+      case BookingStatus.checkedIn:
+        color = Colors.blue;
+        break;
+      case BookingStatus.checkedOut:
+        color = Colors.purple;
+        break;
+      case BookingStatus.cancelled:
+        color = Colors.red;
+        break;
+      case BookingStatus.noShow:
+        color = Colors.grey;
+        break;
+      case BookingStatus.completed:
+        color = Colors.teal;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        status.name.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  void _showBookingDetails(Booking booking) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Booking ${booking.bookingNumber}'),
+        content: SizedBox(
+          width: 600,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildBookingDetailRow('Pet', booking.petName),
+                _buildBookingDetailRow('Room', 'Room ${booking.roomNumber}'),
+                _buildBookingDetailRow('Type', booking.type.name.toUpperCase()),
+                _buildBookingDetailRow('Status', booking.status.name.toUpperCase()),
+                _buildBookingDetailRow('Check-in Date', _formatDate(booking.checkInDate)),
+                _buildBookingDetailRow('Check-out Date', _formatDate(booking.checkOutDate)),
+                _buildBookingDetailRow('Check-in Time', '${booking.checkInTime.hour.toString().padLeft(2, '0')}:${booking.checkInTime.minute.toString().padLeft(2, '0')}'),
+                _buildBookingDetailRow('Check-out Time', '${booking.checkOutTime.hour.toString().padLeft(2, '0')}:${booking.checkOutTime.minute.toString().padLeft(2, '0')}'),
+                _buildBookingDetailRow('Base Price/Night', '\$${booking.basePricePerNight.toStringAsFixed(2)}'),
+                _buildBookingDetailRow('Total Amount', '\$${booking.totalAmount.toStringAsFixed(2)}'),
+                if (booking.depositAmount != null)
+                  _buildBookingDetailRow('Deposit', '\$${booking.depositAmount!.toStringAsFixed(2)}'),
+                if (booking.assignedStaffName != null)
+                  _buildBookingDetailRow('Assigned Staff', booking.assignedStaffName!),
+                if (booking.paymentMethod != null)
+                  _buildBookingDetailRow('Payment Method', booking.paymentMethod!),
+                if (booking.paymentStatus != null)
+                  _buildBookingDetailRow('Payment Status', booking.paymentStatus!),
+                if (booking.specialInstructions != null && booking.specialInstructions!.isNotEmpty)
+                  _buildBookingDetailRow('Special Instructions', booking.specialInstructions!),
+                if (booking.careNotes != null && booking.careNotes!.isNotEmpty)
+                  _buildBookingDetailRow('Care Notes', booking.careNotes!),
+                if (booking.additionalServices != null && booking.additionalServices!.isNotEmpty)
+                  _buildBookingDetailRow('Additional Services', booking.additionalServices!.join(', ')),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookingDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showModifyBookingDialog(Booking booking) {
+    // TODO: Implement booking modification dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Modify Booking'),
+        content: const Text('Booking modification functionality will be implemented here.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCancelBookingDialog(Booking booking) {
+    final _reasonController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Booking'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Are you sure you want to cancel booking ${booking.bookingNumber}?'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Cancellation Reason',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Keep Booking'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: Implement cancellation functionality
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Booking ${booking.bookingNumber} has been cancelled'),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Cancel Booking'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Vaccination> _getUpcomingVaccinations(List<Vaccination> vaccinations) {
+    final now = DateTime.now();
+    final nextMonth = now.add(const Duration(days: 30));
+    
+    return vaccinations.where((vaccination) {
+      return vaccination.expiryDate.isAfter(now) && 
+             vaccination.expiryDate.isBefore(nextMonth) &&
+             vaccination.status == VaccinationStatus.upToDate;
+    }).toList();
+  }
+
+  List<Vaccination> _getOverdueVaccinations(List<Vaccination> vaccinations) {
+    final now = DateTime.now();
+    
+    return vaccinations.where((vaccination) {
+      return vaccination.expiryDate.isBefore(now) &&
+             vaccination.status == VaccinationStatus.upToDate;
+    }).toList();
+  }
+
+  Widget _buildVaccinationSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search vaccinations...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              onChanged: (value) {
+                // TODO: Implement search functionality
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          DropdownButton<String>(
+            hint: const Text('Filter by Status'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All')),
+              DropdownMenuItem(value: 'active', child: Text('Active')),
+              DropdownMenuItem(value: 'expired', child: Text('Expired')),
+              DropdownMenuItem(value: 'notApplicable', child: Text('Not Applicable')),
+            ],
+            onChanged: (value) {
+              // TODO: Implement filter functionality
+            },
+          ),
+          const SizedBox(width: 16),
+          DropdownButton<String>(
+            hint: const Text('Filter by Type'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All Types')),
+              DropdownMenuItem(value: 'rabies', child: Text('Rabies')),
+              DropdownMenuItem(value: 'dhpp', child: Text('DHPP')),
+              DropdownMenuItem(value: 'bordetella', child: Text('Bordetella')),
+              DropdownMenuItem(value: 'feline', child: Text('Feline')),
+            ],
+            onChanged: (value) {
+              // TODO: Implement filter functionality
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVaccinationCard(Vaccination vaccination) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        vaccination.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${vaccination.type.displayName} • Pet: ${vaccination.petName}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      _formatDate(vaccination.expiryDate),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: vaccination.expiryDate.isBefore(DateTime.now()) 
+                            ? Colors.red 
+                            : vaccination.expiryDate.isBefore(DateTime.now().add(const Duration(days: 30)))
+                                ? Colors.orange
+                                : Colors.green,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildVaccinationStatusChip(vaccination.status),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  'Administered: ${_formatDate(vaccination.administeredDate)}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Text(
+                  'Vet: ${vaccination.administeredBy}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            if (vaccination.notes != null && vaccination.notes!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  vaccination.notes!,
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showVaccinationDetails(vaccination),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View Details'),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: () => _showEditVaccinationDialog(vaccination),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Edit'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (vaccination.status == VaccinationStatus.upToDate)
+                  TextButton.icon(
+                    onPressed: () => _showScheduleVaccinationDialog(vaccination),
+                    icon: const Icon(Icons.schedule, size: 16),
+                    label: const Text('Schedule'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.green,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVaccinationStatusChip(VaccinationStatus status) {
+    Color color;
+    switch (status) {
+      case VaccinationStatus.upToDate:
+        color = Colors.green;
+        break;
+      case VaccinationStatus.expired:
+        color = Colors.red;
+        break;
+      case VaccinationStatus.notApplicable:
+        color = Colors.grey;
+        break;
+      case VaccinationStatus.upToDate:
+        color = Colors.blue;
+        break;
+      case VaccinationStatus.dueSoon:
+        color = Colors.orange;
+        break;
+      case VaccinationStatus.overdue:
+        color = Colors.red[700]!;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        status.displayName,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  void _showVaccinationDetails(Vaccination vaccination) {
+    showDialog(
+      context: context,
+      builder: (context) => VaccinationDetailsDialog(vaccination: vaccination),
+    );
+  }
+
+  void _showEditVaccinationDialog(Vaccination vaccination) {
+    showDialog(
+      context: context,
+      builder: (context) => EditVaccinationDialog(
+        vaccination: vaccination,
+        onUpdate: (updatedVaccination) async {
+          await _vaccinationDao.update(updatedVaccination);
+          setState(() {
+            _vaccinationsFuture = _vaccinationDao.getByCustomerId(widget.customer.id);
+          });
+        },
+      ),
+    );
+  }
+
+
+
+  void _showScheduleVaccinationDialog(Vaccination vaccination) {
+    // TODO: Implement vaccination scheduling dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Schedule Vaccination'),
+        content: const Text('Vaccination scheduling functionality will be implemented here.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoyaltySearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search loyalty transactions...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              onChanged: (value) {
+                // TODO: Implement search functionality
+              },
+            ),
+          ),
+          const SizedBox(width: 16),
+          DropdownButton<String>(
+            hint: const Text('Filter by Type'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All')),
+              DropdownMenuItem(value: 'earned', child: Text('Earned')),
+              DropdownMenuItem(value: 'redeemed', child: Text('Redeemed')),
+              DropdownMenuItem(value: 'expired', child: Text('Expired')),
+              DropdownMenuItem(value: 'adjusted', child: Text('Adjusted')),
+            ],
+            onChanged: (value) {
+              // TODO: Implement filter functionality
+            },
+          ),
+          const SizedBox(width: 16),
+          DropdownButton<String>(
+            hint: const Text('Filter by Status'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('All')),
+              DropdownMenuItem(value: 'pending', child: Text('Pending')),
+              DropdownMenuItem(value: 'completed', child: Text('Completed')),
+              DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
+            ],
+            onChanged: (value) {
+              // TODO: Implement filter functionality
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoyaltyTransactionCard(LoyaltyTransaction transaction) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        transaction.description,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${transaction.type.name.toUpperCase()} • ${_formatDateTime(transaction.createdAt)}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${transaction.points > 0 ? '+' : ''}${transaction.points}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: transaction.points > 0 ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildLoyaltyTransactionStatusChip(transaction.status),
+                  ],
+                ),
+              ],
+            ),
+            if (transaction.referenceId != null) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.receipt, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Reference: ${transaction.referenceId}',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (transaction.notes != null && transaction.notes!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  transaction.notes!,
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showLoyaltyTransactionDetails(transaction),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View Details'),
+                ),
+                if (transaction.status == LoyaltyTransactionStatus.pending) ...[
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: () => _showProcessLoyaltyTransactionDialog(transaction),
+                    icon: const Icon(Icons.check, size: 16),
+                    label: const Text('Process'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.green,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoyaltyTransactionStatusChip(LoyaltyTransactionStatus status) {
+    Color color;
+    switch (status) {
+      case LoyaltyTransactionStatus.pending:
+        color = Colors.orange;
+        break;
+      case LoyaltyTransactionStatus.completed:
+        color = Colors.green;
+        break;
+      case LoyaltyTransactionStatus.cancelled:
+        color = Colors.red;
+        break;
+      case LoyaltyTransactionStatus.failed:
+        color = Colors.red[700]!;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        status.name.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  void _showLoyaltyTransactionDetails(LoyaltyTransaction transaction) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Loyalty Transaction #${transaction.id.substring(0, 8)}'),
+        content: SizedBox(
+          width: 600,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildLoyaltyDetailRow('Description', transaction.description),
+                _buildLoyaltyDetailRow('Type', transaction.type.name.toUpperCase()),
+                _buildLoyaltyDetailRow('Points', '${transaction.points > 0 ? '+' : ''}${transaction.points}'),
+                _buildLoyaltyDetailRow('Status', transaction.status.name.toUpperCase()),
+                _buildLoyaltyDetailRow('Date', _formatDateTime(transaction.createdAt)),
+                if (transaction.processedAt != null)
+                  _buildLoyaltyDetailRow('Processed At', _formatDateTime(transaction.processedAt!)),
+                if (transaction.referenceId != null)
+                  _buildLoyaltyDetailRow('Reference ID', transaction.referenceId!),
+                if (transaction.notes != null && transaction.notes!.isNotEmpty)
+                  _buildLoyaltyDetailRow('Notes', transaction.notes!),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoyaltyDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProcessLoyaltyTransactionDialog(LoyaltyTransaction transaction) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Process Loyalty Transaction'),
+        content: Text('Are you sure you want to process this loyalty transaction?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: Implement processing functionality
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Loyalty transaction processed successfully'),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Process'),
+          ),
         ],
       ),
     );

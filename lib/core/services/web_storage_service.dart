@@ -25,7 +25,7 @@ class WebStorageService {
 	static const String _productsKey = '${_prefix}products';
 	static const String _inventoryTransactionsKey = '${_prefix}inventory_transactions';
 
-  static bool get isAvailable => kIsWeb;
+  static bool get isAvailable => true; // Make available on all platforms
 
   /// Initialize web storage (no-op for web, but provides consistent interface)
   static Future<void> initialize() async {
@@ -85,6 +85,29 @@ class WebStorageService {
       print('_saveData: Successfully saved ${data.length} items for key: $key');
     } catch (e) {
       print('Error saving to web storage: $e');
+      print('Error stack trace: ${StackTrace.current}');
+    }
+  }
+
+  /// Remove data for a specific key
+  static void removeData(String key) {
+    print('_removeData called with key: $key');
+    print('kIsWeb: $kIsWeb');
+    print('isAvailable: $isAvailable');
+    
+    if (!isAvailable) {
+      print('_removeData: Not available, returning early');
+      return;
+    }
+    
+    try {
+      print('_removeData: Creating WebStorageImplementation...');
+      final implementation = WebStorageImplementation();
+      print('_removeData: WebStorageImplementation created successfully');
+      implementation.removeData(key);
+      print('_removeData: Successfully removed data for key: $key');
+    } catch (e) {
+      print('Error removing from web storage: $e');
       print('Error stack trace: ${StackTrace.current}');
     }
   }

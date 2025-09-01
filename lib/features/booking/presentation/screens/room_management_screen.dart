@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cat_hotel_pos/features/booking/domain/entities/room.dart';
 import 'package:cat_hotel_pos/features/booking/presentation/providers/room_providers.dart';
+import 'package:cat_hotel_pos/features/booking/presentation/widgets/create_room_dialog.dart';
+import 'package:cat_hotel_pos/features/booking/presentation/widgets/edit_room_dialog.dart';
+import 'package:cat_hotel_pos/features/booking/presentation/widgets/room_details_dialog.dart';
 import 'package:uuid/uuid.dart';
 
 class RoomManagementScreen extends ConsumerStatefulWidget {
@@ -121,14 +124,14 @@ class _RoomManagementScreenState extends ConsumerState<RoomManagementScreen> {
   void _showCreateRoomDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => const _CreateRoomDialog(),
+      builder: (context) => const CreateRoomDialog(),
     );
   }
 
   void _showEditRoomDialog(BuildContext context, Room room) {
     showDialog(
       context: context,
-      builder: (context) => _EditRoomDialog(room: room),
+      builder: (context) => EditRoomDialog(room: room),
     );
   }
 
@@ -142,7 +145,7 @@ class _RoomManagementScreenState extends ConsumerState<RoomManagementScreen> {
   void _showRoomDetailsDialog(BuildContext context, Room room) {
     showDialog(
       context: context,
-      builder: (context) => _RoomDetailsDialog(room: room),
+      builder: (context) => RoomDetailsDialog(room: room),
     );
   }
 

@@ -397,6 +397,13 @@ class PosDao {
     return _transactions.values.toList();
   }
 
+  Future<List<POSTransaction>> getTransactionsByCustomerId(String customerId) async {
+    _initialize();
+    return _transactions.values
+        .where((transaction) => transaction.customerId == customerId)
+        .toList();
+  }
+
   Future<POSTransaction> updateTransaction(POSTransaction transaction) async {
     _initialize();
     _transactions[transaction.id] = transaction;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cat_hotel_pos/features/financials/domain/entities/financial_transaction.dart';
 import 'package:cat_hotel_pos/features/financials/domain/entities/financial_account.dart';
 import 'package:cat_hotel_pos/core/services/financial_dao.dart';
+import 'package:cat_hotel_pos/features/financials/presentation/widgets/add_transaction_dialog.dart';
 
 class TransactionsTab extends ConsumerStatefulWidget {
   const TransactionsTab({super.key});
@@ -77,23 +78,41 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Search and filters
+        // Header with search and filters
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Column(
             children: [
               // Search bar
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search transactions...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
                 ),
-                onChanged: (value) => setState(() => _searchQuery = value),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search transactions by description, reference, or ID...',
+                    hintStyle: TextStyle(color: Colors.grey[500]),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                  ),
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                ),
               ),
               const SizedBox(height: 16),
               
@@ -101,97 +120,141 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<TransactionType>(
-                      decoration: const InputDecoration(
-                        labelText: 'Type',
-                        border: OutlineInputBorder(),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
                       ),
-                      value: _selectedType,
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('All Types'),
+                      child: DropdownButtonFormField<TransactionType>(
+                        decoration: const InputDecoration(
+                          labelText: 'Type',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                         ),
-                        ...TransactionType.values.map((type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type.displayName),
-                        )),
-                      ],
-                      onChanged: (value) => setState(() => _selectedType = value),
+                        value: _selectedType,
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('All Types'),
+                          ),
+                          ...TransactionType.values.map((type) => DropdownMenuItem(
+                            value: type,
+                            child: Text(type.displayName),
+                          )),
+                        ],
+                        onChanged: (value) => setState(() => _selectedType = value),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: DropdownButtonFormField<TransactionCategory>(
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        border: OutlineInputBorder(),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
                       ),
-                      value: _selectedCategory,
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('All Categories'),
+                      child: DropdownButtonFormField<TransactionCategory>(
+                        decoration: const InputDecoration(
+                          labelText: 'Category',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                         ),
-                        ...TransactionCategory.values.map((category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category.displayName),
-                        )),
-                      ],
-                      onChanged: (value) => setState(() => _selectedCategory = value),
+                        value: _selectedCategory,
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('All Categories'),
+                          ),
+                          ...TransactionCategory.values.map((category) => DropdownMenuItem(
+                            value: category,
+                            child: Text(category.displayName),
+                          )),
+                        ],
+                        onChanged: (value) => setState(() => _selectedCategory = value),
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               
               // Filter row 2
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<TransactionStatus>(
-                      decoration: const InputDecoration(
-                        labelText: 'Status',
-                        border: OutlineInputBorder(),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
                       ),
-                      value: _selectedStatus,
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('All Statuses'),
+                      child: DropdownButtonFormField<TransactionStatus>(
+                        decoration: const InputDecoration(
+                          labelText: 'Status',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                         ),
-                        ...TransactionStatus.values.map((status) => DropdownMenuItem(
-                          value: status,
-                          child: Text(status.displayName),
-                        )),
-                      ],
-                      onChanged: (value) => setState(() => _selectedStatus = value),
+                        value: _selectedStatus,
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('All Statuses'),
+                          ),
+                          ...TransactionStatus.values.map((status) => DropdownMenuItem(
+                            value: status,
+                            child: Text(status.displayName),
+                          )),
+                        ],
+                        onChanged: (value) => setState(() => _selectedStatus = value),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Account',
-                        border: OutlineInputBorder(),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
                       ),
-                      value: _selectedAccountId,
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('All Accounts'),
+                      child: DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Account',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                         ),
-                        ..._accounts.map((account) => DropdownMenuItem(
-                          value: account.id,
-                          child: Text(account.accountName),
-                        )),
-                      ],
-                      onChanged: (value) => setState(() => _selectedAccountId = value),
+                        value: _selectedAccountId,
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('All Accounts'),
+                          ),
+                          ..._accounts.map((account) => DropdownMenuItem(
+                            value: account.id,
+                            child: Text(account.accountName),
+                          )),
+                        ],
+                        onChanged: (value) => setState(() => _selectedAccountId = value),
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               
               // Date range
               Row(
@@ -199,36 +262,114 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                   Expanded(
                     child: InkWell(
                       onTap: () => _selectDateRange(context),
+                      borderRadius: BorderRadius.circular(12),
                       child: Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(4),
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.calendar_today, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              _startDate == null || _endDate == null
-                                  ? 'Select Date Range'
-                                  : '${_startDate!.toString().split(' ')[0]} - ${_endDate!.toString().split(' ')[0]}',
+                            Icon(Icons.calendar_today, size: 20, color: Colors.grey[600]),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _startDate == null || _endDate == null
+                                    ? 'Select Date Range'
+                                    : '${_startDate!.toString().split(' ')[0]} - ${_endDate!.toString().split(' ')[0]}',
+                                style: TextStyle(
+                                  color: _startDate == null || _endDate == null 
+                                      ? Colors.grey[500] 
+                                      : Colors.black87,
+                                  fontSize: 14,
+                                ),
+                              ),
                             ),
+                            Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
                           ],
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  TextButton(
+                  const SizedBox(width: 12),
+                  TextButton.icon(
                     onPressed: () => setState(() {
                       _startDate = null;
                       _endDate = null;
                     }),
-                    child: const Text('Clear Dates'),
+                    icon: const Icon(Icons.clear, size: 16),
+                    label: const Text('Clear'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey[600],
+                    ),
                   ),
                 ],
               ),
+              
+              // Results count
+              if (_filteredTransactions.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${_filteredTransactions.length} transaction${_filteredTransactions.length == 1 ? '' : 's'} found',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    ElevatedButton.icon(
+                      onPressed: _showAddTransactionDialog,
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Add Transaction'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
+                    Text(
+                      'No transactions found',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    ElevatedButton.icon(
+                      onPressed: _showAddTransactionDialog,
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Add Transaction'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -236,24 +377,73 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
         // Transactions list
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.amber[800]!),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Loading transactions...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
               : _filteredTransactions.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text('No transactions found', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.receipt_long_outlined,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'No transactions found',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _searchQuery.isNotEmpty || _selectedType != null || _selectedCategory != null || _selectedStatus != null || _selectedAccountId != null || _startDate != null
+                                ? 'Try adjusting your search or filters'
+                                : 'No transactions recorded yet',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ],
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.all(20),
                       itemCount: _filteredTransactions.length,
                       itemBuilder: (context, index) {
                         final transaction = _filteredTransactions[index];
-                        return _buildTransactionCard(transaction);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildTransactionCard(transaction),
+                        );
                       },
                     ),
         ),
@@ -271,133 +461,283 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
       ),
     );
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          backgroundColor: _getTransactionTypeColor(transaction.type),
-          child: Icon(
-            _getTransactionTypeIcon(transaction.type),
-            color: Colors.white,
+    final isCredit = transaction.type.isCredit;
+    final amountColor = isCredit ? Colors.green[700]! : Colors.red[700]!;
+    final status = transaction.status ?? TransactionStatus.pending;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                transaction.description ?? 'No Description',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _getStatusColor(transaction.status ?? TransactionStatus.pending),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                (transaction.status ?? TransactionStatus.pending).displayName,
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('Account: ${account.accountName}'),
-            Text('Category: ${transaction.category.displayName}'),
-            if (transaction.reference != null) Text('Reference: ${transaction.reference}'),
-            Row(
-              children: [
-                Text('Date: ${transaction.transactionDate.toString().split(' ')[0]}'),
-                const SizedBox(width: 16),
-                Text('Time: ${transaction.transactionDate.toString().split(' ')[1].substring(0, 5)}'),
-              ],
-            ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${transaction.currency} ${transaction.amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: transaction.type.isCredit ? Colors.green[700] : Colors.red[700],
-              ),
-            ),
-            Text(
-              transaction.type.displayName,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (value) => _handleTransactionAction(value, transaction),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'view',
-                  child: Row(
-                    children: [
-                      Icon(Icons.visibility, color: Colors.blue),
-                      SizedBox(width: 8),
-                      Text('View Details'),
-                    ],
+        ],
+      ),
+      child: InkWell(
+        onTap: () => _showTransactionDetails(transaction),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _getTransactionTypeColor(transaction.type).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _getTransactionTypeIcon(transaction.type),
+                      color: _getTransactionTypeColor(transaction.type),
+                      size: 24,
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit, color: Colors.orange),
-                      SizedBox(width: 8),
-                      Text('Edit'),
-                    ],
-                  ),
-                ),
-                if ((transaction.status ?? TransactionStatus.pending) == TransactionStatus.pending)
-                  const PopupMenuItem(
-                    value: 'approve',
-                    child: Row(
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.check_circle, color: Colors.green),
-                        SizedBox(width: 8),
-                        Text('Approve'),
+                        Text(
+                          transaction.description ?? 'No Description',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Account: ${account.accountName}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                if ((transaction.status ?? TransactionStatus.pending) == TransactionStatus.completed)
-                  const PopupMenuItem(
-                    value: 'reverse',
-                    child: Row(
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(status),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      status.displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Transaction details
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.undo, color: Colors.orange),
-                        SizedBox(width: 8),
-                        Text('Reverse'),
+                        Text(
+                          'Category',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          transaction.category.displayName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Delete'),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Type',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          transaction.type.displayName,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Amount',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${transaction.currency} ${transaction.amount.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: amountColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Date and reference
+              Row(
+                children: [
+                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${transaction.transactionDate.toString().split(' ')[0]} at ${transaction.transactionDate.toString().split(' ')[1].substring(0, 5)}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  if (transaction.reference != null) ...[
+                    const SizedBox(width: 16),
+                    Icon(Icons.receipt, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Ref: ${transaction.reference}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showTransactionDetails(transaction),
+                      icon: const Icon(Icons.visibility, size: 16),
+                      label: const Text('View Details'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue,
+                        side: BorderSide(color: Colors.blue.withOpacity(0.3)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  if (status == TransactionStatus.pending) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _approveTransaction(transaction),
+                        icon: const Icon(Icons.check_circle, size: 16),
+                        label: const Text('Approve'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.green,
+                          side: BorderSide(color: Colors.green.withOpacity(0.3)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  if (status == TransactionStatus.completed) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _reverseTransaction(transaction),
+                        icon: const Icon(Icons.undo, size: 16),
+                        label: const Text('Reverse'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange,
+                          side: BorderSide(color: Colors.orange.withOpacity(0.3)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                    onSelected: (value) => _handleTransactionAction(value, transaction),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, color: Colors.orange),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete'),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -653,5 +993,17 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
         }
       }
     }
+  }
+
+  void _showAddTransactionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AddTransactionDialog(
+        accounts: _accounts,
+        onTransactionAdded: (transaction) {
+          _loadData();
+        },
+      ),
+    );
   }
 }
