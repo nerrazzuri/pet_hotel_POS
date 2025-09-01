@@ -1,10 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cat_hotel_pos/features/booking/domain/entities/booking.dart';
+import 'package:cat_hotel_pos/features/booking/domain/entities/waitlist.dart';
+import 'package:cat_hotel_pos/features/booking/domain/entities/blackout_date.dart';
+import 'package:cat_hotel_pos/features/booking/domain/entities/booking_policy.dart';
 import 'package:cat_hotel_pos/features/booking/domain/services/booking_service.dart';
+import 'package:cat_hotel_pos/features/booking/domain/services/waitlist_service.dart';
+import 'package:cat_hotel_pos/features/booking/domain/services/booking_policy_service.dart';
 import 'package:cat_hotel_pos/core/services/booking_dao.dart';
 import 'package:cat_hotel_pos/core/services/room_dao.dart';
 import 'package:cat_hotel_pos/core/services/customer_dao.dart';
 import 'package:cat_hotel_pos/core/services/pet_dao.dart';
+import 'package:cat_hotel_pos/core/services/waitlist_dao.dart';
+import 'package:cat_hotel_pos/core/services/blackout_date_dao.dart';
+import 'package:cat_hotel_pos/core/services/booking_policy_dao.dart';
 import 'package:cat_hotel_pos/features/customers/domain/entities/customer.dart';
 import 'package:cat_hotel_pos/features/customers/domain/entities/pet.dart';
 import 'package:cat_hotel_pos/features/booking/domain/entities/room.dart';
@@ -451,4 +459,73 @@ class BookingSearchNotifier extends StateNotifier<AsyncValue<List<Booking>>> {
 final bookingSearchNotifierProvider = StateNotifierProvider<BookingSearchNotifier, AsyncValue<List<Booking>>>((ref) {
   final service = ref.read(bookingServiceProvider);
   return BookingSearchNotifier(service);
+});
+
+// New DAO providers
+final waitlistDaoProvider = Provider<WaitlistDao>((ref) => WaitlistDao());
+final blackoutDateDaoProvider = Provider<BlackoutDateDao>((ref) => BlackoutDateDao());
+final bookingPolicyDaoProvider = Provider<BookingPolicyDao>((ref) => BookingPolicyDao());
+
+// New service providers
+final waitlistServiceProvider = Provider<WaitlistService>((ref) {
+  return WaitlistService(
+    waitlistDao: ref.read(waitlistDaoProvider),
+    roomDao: ref.read(roomDaoProvider),
+    bookingDao: ref.read(bookingDaoProvider),
+  );
+});
+
+final bookingPolicyServiceProvider = Provider<BookingPolicyService>((ref) {
+  return BookingPolicyService(
+    policyDao: ref.read(bookingPolicyDaoProvider),
+    bookingDao: ref.read(bookingDaoProvider),
+  );
+});
+
+// Waitlist data providers
+final waitlistEntriesProvider = FutureProvider<List<WaitlistEntry>>((ref) async {
+  final dao = ref.read(waitlistDaoProvider);
+  return await dao.getAll();
+});
+
+final pendingWaitlistProvider = FutureProvider<List<WaitlistEntry>>((ref) async {
+  final dao = ref.read(waitlistDaoProvider);
+  return await dao.getByStatus(WaitlistStatus.pending);
+});
+
+final urgentWaitlistProvider = FutureProvider<List<WaitlistEntry>>((ref) async {
+  final dao = ref.read(waitlistDaoProvider);
+  return await dao.getByPriority(WaitlistPriority.urgent);
+});
+
+final waitlistStatisticsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final service = ref.read(waitlistServiceProvider);
+  return await service.getWaitlistStatistics();
+});
+
+// Blackout dates providers
+final blackoutDatesProvider = FutureProvider<List<BlackoutDate>>((ref) async {
+  final dao = ref.read(blackoutDateDaoProvider);
+  return await dao.getAll();
+});
+
+final activeBlackoutDatesProvider = FutureProvider<List<BlackoutDate>>((ref) async {
+  final dao = ref.read(blackoutDateDaoProvider);
+  return await dao.getActiveBlackoutDates();
+});
+
+// Booking policies providers
+final bookingPoliciesProvider = FutureProvider<List<BookingPolicy>>((ref) async {
+  final dao = ref.read(bookingPolicyDaoProvider);
+  return await dao.getAll();
+});
+
+final activeBookingPoliciesProvider = FutureProvider<List<BookingPolicy>>((ref) async {
+  final dao = ref.read(bookingPolicyDaoProvider);
+  return await dao.getActivePolicies();
+});
+
+final policySummaryProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final service = ref.read(bookingPolicyServiceProvider);
+  return await service.getPolicySummary();
 });
