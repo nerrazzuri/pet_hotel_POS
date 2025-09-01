@@ -15,6 +15,12 @@ class RoomManagementScreen extends ConsumerStatefulWidget {
 }
 
 class _RoomManagementScreenState extends ConsumerState<RoomManagementScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  RoomStatus? _selectedStatus;
+  RoomType? _selectedType;
+  String _searchQuery = '';
+  bool _showAdvancedSearch = false;
+
   @override
   void initState() {
     super.initState();
@@ -35,22 +41,47 @@ class _RoomManagementScreenState extends ConsumerState<RoomManagementScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final roomsAsync = ref.watch(roomsProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Room Management'),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        elevation: 0,
         actions: [
+          // Enhanced search toggle
+          IconButton(
+            icon: Icon(_showAdvancedSearch ? Icons.search_off : Icons.search),
+            onPressed: () {
+              setState(() {
+                _showAdvancedSearch = !_showAdvancedSearch;
+              });
+            },
+            tooltip: _showAdvancedSearch ? 'Hide Advanced Search' : 'Show Advanced Search',
+          ),
+          // Export button
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: _exportRoomData,
+            tooltip: 'Export Room Data',
+          ),
+          // Create room button
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => _showCreateRoomDialog(context),
             tooltip: 'Add New Room',
           ),
+          // Refresh button
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(roomsProvider),
@@ -58,64 +89,315 @@ class _RoomManagementScreenState extends ConsumerState<RoomManagementScreen> {
           ),
         ],
       ),
-      body: roomsAsync.when(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.grey[50]!,
+              Colors.blue[50]!,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Statistics Cards
+            _buildStatisticsCards(roomsAsync),
+            
+            // Search and Filter Section
+            if (_showAdvancedSearch) _buildAdvancedSearchAndFilters(),
+            
+            // Rooms List
+            Expanded(
+              child: _buildRoomsList(roomsAsync),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _exportRoomData() {
+    // TODO: Implement export functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Export functionality coming soon!')),
+    );
+  }
+
+  Widget _buildStatisticsCards(AsyncValue<List<Room>> roomsAsync) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: roomsAsync.when(
         data: (rooms) {
-          if (rooms.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.hotel_outlined, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'No rooms found',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Add your first room to get started',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            );
-          }
+          final totalRooms = rooms.length;
+          final availableRooms = rooms.where((r) => r.status == RoomStatus.available).length;
+          final occupiedRooms = rooms.where((r) => r.status == RoomStatus.occupied).length;
+          final maintenanceRooms = rooms.where((r) => r.status == RoomStatus.maintenance).length;
           
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: rooms.length,
-            itemBuilder: (context, index) {
-              final room = rooms[index];
-                             return _RoomCard(
-                 room: room,
-                 onEdit: () => _showEditRoomDialog(context, room),
-                 onDelete: () => _showDeleteRoomDialog(context, room),
-                 onView: () => _showRoomDetailsDialog(context, room),
-                 onStatusChange: (room) => _showStatusChangeDialog(context, room),
-               );
-            },
+          return Row(
+            children: [
+              Expanded(
+                child: _buildEnhancedStatCard(
+                  'Total Rooms',
+                  '$totalRooms',
+                  Icons.hotel,
+                  Colors.blue[700]!,
+                  Colors.blue[50]!,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildEnhancedStatCard(
+                  'Available',
+                  '$availableRooms',
+                  Icons.check_circle,
+                  Colors.green[700]!,
+                  Colors.green[50]!,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildEnhancedStatCard(
+                  'Occupied',
+                  '$occupiedRooms',
+                  Icons.person,
+                  Colors.red[700]!,
+                  Colors.red[50]!,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildEnhancedStatCard(
+                  'Maintenance',
+                  '$maintenanceRooms',
+                  Icons.build,
+                  Colors.orange[700]!,
+                  Colors.orange[50]!,
+                ),
+              ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                'Error loading rooms',
-                style: Theme.of(context).textTheme.headlineSmall,
+        error: (error, stack) => Center(child: Text('Error: $error')),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedStatCard(String title, String value, IconData icon, Color color, Color backgroundColor) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [backgroundColor, backgroundColor.withOpacity(0.7)],
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.red,
+              child: Icon(icon, color: color, size: 32),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: color.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdvancedSearchAndFilters() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Search Bar
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              labelText: 'Search rooms...',
+              hintText: 'Search by room number, name, or description',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+              // TODO: Implement search functionality
+            },
+          ),
+          const SizedBox(height: 16),
+          // Filter Row
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<RoomStatus?>(
+                  value: _selectedStatus,
+                  decoration: InputDecoration(
+                    labelText: 'Status Filter',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('All Statuses'),
+                    ),
+                    ...RoomStatus.values.map((status) => DropdownMenuItem(
+                      value: status,
+                      child: Text(status.name.toUpperCase()),
+                    )),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedStatus = value;
+                    });
+                    // TODO: Implement status filter
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: DropdownButtonFormField<RoomType?>(
+                  value: _selectedType,
+                  decoration: InputDecoration(
+                    labelText: 'Type Filter',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('All Types'),
+                    ),
+                    ...RoomType.values.map((type) => DropdownMenuItem(
+                      value: type,
+                      child: Text(type.displayName),
+                    )),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedType = value;
+                    });
+                    // TODO: Implement type filter
+                  },
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoomsList(AsyncValue<List<Room>> roomsAsync) {
+    return roomsAsync.when(
+      data: (rooms) {
+        if (rooms.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.hotel_outlined, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'No rooms found',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Add your first room to get started',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: rooms.length,
+          itemBuilder: (context, index) {
+            final room = rooms[index];
+            return _RoomCard(
+              room: room,
+              onEdit: () => _showEditRoomDialog(context, room),
+              onDelete: () => _showDeleteRoomDialog(context, room),
+              onView: () => _showRoomDetailsDialog(context, room),
+              onStatusChange: (room) => _showStatusChangeDialog(context, room),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading rooms',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.red,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -138,7 +420,27 @@ class _RoomManagementScreenState extends ConsumerState<RoomManagementScreen> {
   void _showDeleteRoomDialog(BuildContext context, Room room) {
     showDialog(
       context: context,
-      builder: (context) => _DeleteRoomDialog(room: room),
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Room'),
+        content: Text('Are you sure you want to delete room ${room.roomNumber}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement delete room
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Delete room coming soon!')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -152,7 +454,46 @@ class _RoomManagementScreenState extends ConsumerState<RoomManagementScreen> {
   void _showStatusChangeDialog(BuildContext context, Room room) {
     showDialog(
       context: context,
-      builder: (context) => _StatusChangeDialog(room: room),
+      builder: (context) => AlertDialog(
+        title: const Text('Change Room Status'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Current status: ${room.status.name.toUpperCase()}'),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<RoomStatus>(
+              value: room.status,
+              decoration: const InputDecoration(
+                labelText: 'New Status',
+                border: OutlineInputBorder(),
+              ),
+              items: RoomStatus.values.map((status) => DropdownMenuItem(
+                value: status,
+                child: Text(status.name.toUpperCase()),
+              )).toList(),
+              onChanged: (value) {
+                // TODO: Implement status change
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement status change
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Status change coming soon!')),
+              );
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -212,1307 +553,267 @@ class _RoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Row
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            room.roomNumber,
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(room.status),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              room.status.name.toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        room.name,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                ),
-                                 PopupMenuButton<String>(
-                   onSelected: (value) {
-                     switch (value) {
-                       case 'view':
-                         onView();
-                         break;
-                       case 'edit':
-                         onEdit();
-                         break;
-                       case 'delete':
-                         onDelete();
-                         break;
-                       case 'status':
-                         onStatusChange(room);
-                         break;
-                     }
-                   },
-                   itemBuilder: (context) => [
-                     const PopupMenuItem(
-                       value: 'view',
-                       child: Row(
-                         children: [
-                           Icon(Icons.visibility),
-                           SizedBox(width: 8),
-                           Text('View Details'),
-                         ],
-                       ),
-                     ),
-                     const PopupMenuItem(
-                       value: 'edit',
-                       child: Row(
-                         children: [
-                           Icon(Icons.edit),
-                           SizedBox(width: 8),
-                           Text('Edit'),
-                         ],
-                       ),
-                     ),
-                     const PopupMenuItem(
-                       value: 'status',
-                       child: Row(
-                         children: [
-                           Icon(Icons.update),
-                           SizedBox(width: 8),
-                           Text('Change Status'),
-                         ],
-                       ),
-                     ),
-                     const PopupMenuItem(
-                       value: 'delete',
-                       child: Row(
-                         children: [
-                           Icon(Icons.delete),
-                           SizedBox(width: 8),
-                           Text('Delete'),
-                         ],
-                       ),
-                     ),
-                   ],
-                 ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Room Details
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _DetailRow(
-                        icon: Icons.category,
-                        label: 'Type',
-                        value: room.type.name.toUpperCase(),
-                        valueColor: _getTypeColor(room.type),
-                      ),
-                      _DetailRow(
-                        icon: Icons.people,
-                        label: 'Capacity',
-                        value: '${room.capacity} pet${room.capacity > 1 ? 's' : ''}',
-                      ),
-                      _DetailRow(
-                        icon: Icons.attach_money,
-                        label: 'Base Price',
-                        value: '\$${room.basePricePerNight.toStringAsFixed(2)}/night',
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _DetailRow(
-                        icon: Icons.description,
-                        label: 'Description',
-                        value: room.description,
-                        maxLines: 2,
-                      ),
-                      if (room.currentOccupantName != null)
-                        _DetailRow(
-                          icon: Icons.pets,
-                          label: 'Current Pet',
-                          value: room.currentOccupantName!,
-                          valueColor: Colors.orange,
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Amenities
-            if (room.amenities.isNotEmpty) ...[
-              Text(
-                'Amenities:',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: room.amenities.map((amenity) => Chip(
-                  label: Text(amenity),
-                  backgroundColor: Colors.blue[50],
-                  labelStyle: TextStyle(color: Colors.blue[700]),
-                )).toList(),
-              ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              _getStatusColor(room.status).withOpacity(0.05),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color? valueColor;
-  final int? maxLines;
-
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueColor,
-    this.maxLines,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.grey[600]),
-          const SizedBox(width: 8),
-          Text(
-            '$label: ',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12,
-            ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                color: valueColor ?? Colors.black87,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: maxLines,
-              overflow: maxLines != null ? TextOverflow.ellipsis : null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Placeholder dialogs - these will be implemented in the next iteration
-class _CreateRoomDialog extends ConsumerStatefulWidget {
-  const _CreateRoomDialog();
-
-  @override
-  ConsumerState<_CreateRoomDialog> createState() => _CreateRoomDialogState();
-}
-
-class _CreateRoomDialogState extends ConsumerState<_CreateRoomDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _roomNumberController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _basePriceController = TextEditingController();
-  final _peakPriceController = TextEditingController();
-  final _capacityController = TextEditingController();
-  final _amenitiesController = TextEditingController();
-  final _specificationsController = TextEditingController();
-  final _notesController = TextEditingController();
-  
-  RoomType _selectedType = RoomType.standard;
-  RoomStatus _selectedStatus = RoomStatus.available;
-  bool _isLoading = false;
-
-  @override
-  void dispose() {
-    _roomNumberController.dispose();
-    _nameController.dispose();
-    _descriptionController.dispose();
-    _basePriceController.dispose();
-    _peakPriceController.dispose();
-    _capacityController.dispose();
-    _amenitiesController.dispose();
-    _specificationsController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveRoom() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final roomService = ref.read(roomServiceProvider);
-      
-      // Parse amenities from comma-separated string
-      final amenities = _amenitiesController.text.isNotEmpty 
-          ? _amenitiesController.text.split(',').map((e) => e.trim()).toList()
-          : <String>[];
-
-      // Parse specifications from comma-separated string
-      final specifications = _specificationsController.text.isNotEmpty
-          ? _specificationsController.text.split(',').map((e) => e.trim()).toList().asMap().map((index, value) => MapEntry('spec_$index', value))
-          : <String, dynamic>{};
-
-      await roomService.createRoom(
-        roomNumber: _roomNumberController.text.trim(),
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim().isNotEmpty ? _descriptionController.text.trim() : '',
-        type: _selectedType,
-        status: _selectedStatus,
-        basePricePerNight: double.parse(_basePriceController.text),
-        peakSeasonPrice: double.parse(_peakPriceController.text),
-        capacity: int.parse(_capacityController.text),
-        amenities: amenities,
-        specifications: specifications,
-        notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
-      );
-
-      if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Room created successfully!')),
-        );
-        // Refresh the rooms list
-        ref.invalidate(roomsProvider);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating room: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Create New Room'),
-      content: SizedBox(
-        width: 500,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Room Number
-                TextFormField(
-                  controller: _roomNumberController,
-                  decoration: const InputDecoration(
-                    labelText: 'Room Number *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.tag),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Room number is required';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Room Name
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Room Name *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.hotel),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Room name is required';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Room Type
-                DropdownButtonFormField<RoomType>(
-                  value: _selectedType,
-                  decoration: const InputDecoration(
-                    labelText: 'Room Type *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                  items: RoomType.values.map((type) => DropdownMenuItem(
-                    value: type,
-                    child: Text(type.name.toUpperCase()),
-                  )).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedType = value;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Description
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.description),
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-
-                // Pricing
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _basePriceController,
-                        decoration: const InputDecoration(
-                          labelText: 'Base Price per Night *',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.attach_money),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Base price is required';
-                          }
-                          if (double.tryParse(value) == null) {
-                            return 'Please enter a valid number';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _peakPriceController,
-                        decoration: const InputDecoration(
-                          labelText: 'Peak Season Price *',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.trending_up),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Peak price is required';
-                          }
-                          if (double.tryParse(value) == null) {
-                            return 'Please enter a valid number';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Capacity
-                TextFormField(
-                  controller: _capacityController,
-                  decoration: const InputDecoration(
-                    labelText: 'Capacity (Number of Pets) *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.pets),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Capacity is required';
-                    }
-                    if (int.tryParse(value) == null) {
-                      return 'Please enter a valid number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // TODO: Fix amenities and specifications access
-                // Amenities
-                TextFormField(
-                  controller: _amenitiesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Amenities (comma-separated)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.room),
-                    hintText: 'e.g., Window, Scratching post, Toys',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-
-                // Specifications
-                TextFormField(
-                  controller: _specificationsController,
-                  decoration: const InputDecoration(
-                    labelText: 'Specifications (comma-separated)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.info),
-                    hintText: 'e.g., 2m x 2m, 1.5m height',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-
-                // Notes
-                TextFormField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.note),
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ),
+          border: Border.all(
+            color: _getStatusColor(room.status).withOpacity(0.3),
+            width: 1,
           ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _saveRoom,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Create Room'),
-        ),
-      ],
-    );
-  }
-}
-
-class _EditRoomDialog extends ConsumerStatefulWidget {
-  final Room room;
-  
-  const _EditRoomDialog({required this.room});
-
-  @override
-  ConsumerState<_EditRoomDialog> createState() => _EditRoomDialogState();
-}
-
-class _EditRoomDialogState extends ConsumerState<_EditRoomDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _roomNumberController;
-  late final TextEditingController _nameController;
-  late final TextEditingController _descriptionController;
-  late final TextEditingController _basePriceController;
-  late final TextEditingController _peakPriceController;
-  late final TextEditingController _capacityController;
-  late final TextEditingController _amenitiesController;
-  late final TextEditingController _specificationsController;
-  late final TextEditingController _notesController;
-  
-  late RoomType _selectedType;
-  late RoomStatus _selectedStatus;
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _roomNumberController = TextEditingController(text: widget.room.roomNumber);
-    _nameController = TextEditingController(text: widget.room.name);
-    _descriptionController = TextEditingController(text: widget.room.description);
-    _basePriceController = TextEditingController(text: widget.room.basePricePerNight.toString());
-    _peakPriceController = TextEditingController(text: widget.room.peakSeasonPrice.toString());
-    _capacityController = TextEditingController(text: widget.room.capacity.toString());
-    _amenitiesController = TextEditingController(text: widget.room.amenities.join(', '));
-    _specificationsController = TextEditingController(text: _formatSpecifications(widget.room.specifications));
-    _notesController = TextEditingController(text: widget.room.notes ?? '');
-    _selectedType = widget.room.type;
-    _selectedStatus = widget.room.status;
-  }
-
-  String _formatSpecifications(Map<String, dynamic> specifications) {
-    if (specifications.isEmpty) return '';
-    return specifications.entries
-        .map((e) => e.value == true ? e.key : '${e.key}: ${e.value}')
-        .join(', ');
-  }
-
-  @override
-  void dispose() {
-    _roomNumberController.dispose();
-    _nameController.dispose();
-    _descriptionController.dispose();
-    _basePriceController.dispose();
-    _peakPriceController.dispose();
-    _capacityController.dispose();
-    _amenitiesController.dispose();
-    _specificationsController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Edit Room ${widget.room.roomNumber}'),
-      content: SizedBox(
-        width: 500,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Room Number
-                TextFormField(
-                  controller: _roomNumberController,
-                  decoration: const InputDecoration(
-                    labelText: 'Room Number *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.tag),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Room number is required';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Room Name
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Room Name *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.hotel),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Room name is required';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Room Type
-                DropdownButtonFormField<RoomType>(
-                  initialValue: _selectedType,
-                  decoration: const InputDecoration(
-                    labelText: 'Room Type *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                  items: RoomType.values.map((type) {
-                    return DropdownMenuItem(
-                      value: type,
-                      child: Text(type.name.toUpperCase()),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedType = value!;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Room Status
-                DropdownButtonFormField<RoomStatus>(
-                  value: _selectedStatus,
-                  decoration: const InputDecoration(
-                    labelText: 'Room Status *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.info),
-                  ),
-                  items: RoomStatus.values.map((status) {
-                    return DropdownMenuItem(
-                      value: status,
-                      child: Text(status.name.toUpperCase()),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedStatus = value;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Capacity
-                TextFormField(
-                  controller: _capacityController,
-                  decoration: const InputDecoration(
-                    labelText: 'Capacity *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.people),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Capacity is required';
-                    }
-                    final capacity = int.tryParse(value);
-                    if (capacity == null || capacity <= 0) {
-                      return 'Capacity must be a positive number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Base Price
-                TextFormField(
-                  controller: _basePriceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Base Price per Night *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Base price is required';
-                    }
-                    final price = double.tryParse(value);
-                    if (price == null || price < 0) {
-                      return 'Price must be a positive number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Peak Season Price
-                TextFormField(
-                  controller: _peakPriceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Peak Season Price *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.trending_up),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Peak season price is required';
-                    }
-                    final price = double.tryParse(value);
-                    if (price == null || price < 0) {
-                      return 'Price must be a positive number';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Description
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.description),
-                  ),
-                  maxLines: 3,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Description is required';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Amenities
-                TextFormField(
-                  controller: _amenitiesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Amenities',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.room_service),
-                    hintText: 'Separate with commas (e.g., WiFi, TV, AC)',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                
-                // Specifications
-                TextFormField(
-                  controller: _specificationsController,
-                  decoration: const InputDecoration(
-                    labelText: 'Specifications',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.info),
-                    hintText: 'Room dimensions, features, etc.',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                
-                // Notes
-                TextFormField(
-                  controller: _notesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.note),
-                  ),
-                  maxLines: 2,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _updateRoom,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Update Room'),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _updateRoom() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final amenities = _amenitiesController.text.isNotEmpty
-          ? _amenitiesController.text.split(',').map((e) => e.trim()).toList()
-          : <String>[];
-      
-      final specifications = <String, dynamic>{};
-      if (_specificationsController.text.isNotEmpty) {
-        final specs = _specificationsController.text.split(',').map((e) => e.trim()).toList();
-        for (final spec in specs) {
-          if (spec.contains(':')) {
-            final parts = spec.split(':');
-            if (parts.length == 2) {
-              specifications[parts[0].trim()] = parts[1].trim();
-            }
-          } else {
-            specifications[spec] = true;
-          }
-        }
-      }
-
-      final updatedRoom = widget.room.copyWith(
-        roomNumber: _roomNumberController.text.trim(),
-        name: _nameController.text.trim(),
-        type: _selectedType,
-        status: _selectedStatus,
-        capacity: int.parse(_capacityController.text),
-        basePricePerNight: double.parse(_basePriceController.text),
-        peakSeasonPrice: double.parse(_peakPriceController.text),
-        description: _descriptionController.text.trim(),
-        amenities: amenities,
-        specifications: specifications,
-        updatedAt: DateTime.now(),
-        notes: _notesController.text.isNotEmpty ? _notesController.text.trim() : null,
-      );
-
-      final roomService = ref.read(roomServiceProvider);
-      await roomService.updateRoom(
-        roomId: updatedRoom.id,
-        roomNumber: updatedRoom.roomNumber,
-        name: updatedRoom.name,
-        type: updatedRoom.type,
-        status: updatedRoom.status,
-        capacity: updatedRoom.capacity,
-        basePricePerNight: updatedRoom.basePricePerNight,
-        peakSeasonPrice: updatedRoom.peakSeasonPrice,
-        description: updatedRoom.description,
-        amenities: updatedRoom.amenities,
-        specifications: updatedRoom.specifications,
-        notes: updatedRoom.notes,
-      );
-
-      if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Room ${updatedRoom.name} updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating room: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-}
-
-class _DeleteRoomDialog extends ConsumerStatefulWidget {
-  final Room room;
-  
-  const _DeleteRoomDialog({required this.room});
-
-  @override
-  ConsumerState<_DeleteRoomDialog> createState() => _DeleteRoomDialogState();
-}
-
-class _DeleteRoomDialogState extends ConsumerState<_DeleteRoomDialog> {
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Delete Room ${widget.room.roomNumber}'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Are you sure you want to delete ${widget.room.name}?'),
-          const SizedBox(height: 16),
-          if (widget.room.status == RoomStatus.occupied)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                border: Border.all(color: Colors.orange.shade200),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning, color: Colors.orange.shade700),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'This room is currently occupied. Deleting it may affect active bookings.',
-                      style: TextStyle(color: Colors.orange.shade700),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () => _deleteRoom(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('Delete'),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _deleteRoom(BuildContext context) async {
-    try {
-      final roomService = ref.read(roomServiceProvider);
-      await roomService.deleteRoom(widget.room.id);
-      
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Room ${widget.room.name} deleted successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error deleting room: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-}
-
-class _RoomDetailsDialog extends StatelessWidget {
-  final Room room;
-  
-  const _RoomDetailsDialog({required this.room});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Room ${room.roomNumber} Details'),
-      content: SizedBox(
-        width: 500,
-        child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              // Basic Information
-              _buildDetailSection(
-                'Basic Information',
-                [
-                  _buildDetailRow('Room Number', room.roomNumber),
-                  _buildDetailRow('Name', room.name),
-                  _buildDetailRow('Type', room.type.name.toUpperCase()),
-                  _buildDetailRow('Status', room.status.name.toUpperCase()),
-                  _buildDetailRow('Capacity', '${room.capacity} pets'),
-                  _buildDetailRow('Base Price', '\$${room.basePricePerNight.toStringAsFixed(2)}/night'),
-                  _buildDetailRow('Peak Price', '\$${room.peakSeasonPrice.toStringAsFixed(2)}/night'),
+              // Header Row
+              Row(
+                children: [
+                  // Room Number Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _getTypeColor(room.type),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      room.roomNumber,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  // Status Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(room.status).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _getStatusColor(room.status),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      room.status.name.toUpperCase(),
+                      style: TextStyle(
+                        color: _getStatusColor(room.status),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              
               const SizedBox(height: 16),
               
-              // Description
-              _buildDetailSection(
-                'Description',
-                [_buildDetailRow('', room.description, maxLines: 3)],
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Amenities
-              if (room.amenities.isNotEmpty)
-                _buildDetailSection(
-                  'Amenities',
-                  [_buildDetailRow('', room.amenities.join(', '), maxLines: 2)],
-                ),
-              
-              if (room.amenities.isNotEmpty) const SizedBox(height: 16),
-              
-              // Specifications
-              if (room.specifications.isNotEmpty)
-                _buildDetailSection(
-                  'Specifications',
-                  [_buildDetailRow('', _formatSpecificationsForDisplay(room.specifications), maxLines: 2)],
-                ),
-              
-              if (room.specifications.isNotEmpty) const SizedBox(height: 16),
-              
-              // Current Status
-              _buildDetailSection(
-                'Current Status',
-                [
-                  if (room.currentOccupantName != null)
-                    _buildDetailRow('Current Occupant', room.currentOccupantName!),
-                  if (room.lastCleanedAt != null)
-                    _buildDetailRow('Last Cleaned', _formatDateTime(room.lastCleanedAt!)),
-                  if (room.nextCleaningDue != null)
-                    _buildDetailRow('Next Cleaning Due', _formatDateTime(room.nextCleaningDue!)),
-                  if (room.currentPrice != null)
-                    _buildDetailRow('Current Price', '\$${room.currentPrice!.toStringAsFixed(2)}/night'),
+              // Room Info
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: _getTypeColor(room.type).withOpacity(0.1),
+                    child: Icon(
+                      Icons.room,
+                      color: _getTypeColor(room.type),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          room.name,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          room.type.displayName,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-              
               const SizedBox(height: 16),
               
-              // Notes
-              if (room.notes != null && room.notes!.isNotEmpty)
-                _buildDetailSection(
-                  'Notes',
-                  [_buildDetailRow('', room.notes!, maxLines: 3)],
-                ),
-              
-              if (room.notes != null && room.notes!.isNotEmpty) const SizedBox(height: 16),
-              
-              // Maintenance Notes
-              if (room.maintenanceNotes != null && room.maintenanceNotes!.isNotEmpty)
-                _buildDetailSection(
-                  'Maintenance Notes',
-                  [_buildDetailRow('', room.maintenanceNotes!, maxLines: 3)],
-                ),
-              
+              // Room Details Grid
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildDetailItem(
+                      'Capacity',
+                      '${room.capacity} pets',
+                      Icons.pets,
+                      colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildDetailItem(
+                      'Price',
+                      'MYR ${room.basePricePerNight.toStringAsFixed(2)}',
+                      Icons.attach_money,
+                      Colors.green[700]!,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildDetailItem(
+                      'Type',
+                      room.type.displayName,
+                      Icons.category,
+                      Colors.blue[700]!,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildDetailItem(
+                      'Status',
+                      room.status.name.toUpperCase(),
+                      Icons.info,
+                      Colors.orange[700]!,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
               
-              // System Information
-              _buildDetailSection(
-                'System Information',
-                [
-                  _buildDetailRow('Created', _formatDateTime(room.createdAt)),
-                  _buildDetailRow('Last Updated', _formatDateTime(room.updatedAt)),
-                  _buildDetailRow('Active', room.isActive ? 'Yes' : 'No'),
+              // Action Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildActionButton(
+                    'View',
+                    Icons.visibility,
+                    Colors.blue,
+                    onView,
+                  ),
+                  _buildActionButton(
+                    'Edit',
+                    Icons.edit,
+                    Colors.orange,
+                    onEdit,
+                  ),
+                  _buildActionButton(
+                    'Status',
+                    Icons.swap_horiz,
+                    Colors.purple,
+                    () => onStatusChange(room),
+                  ),
+                  _buildActionButton(
+                    'Delete',
+                    Icons.delete,
+                    Colors.red,
+                    onDelete,
+                  ),
                 ],
               ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Close'),
-        ),
-      ],
     );
   }
 
-  Widget _buildDetailSection(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue,
-          ),
+  Widget _buildDetailItem(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
         ),
-        const SizedBox(height: 8),
-        ...children,
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, {int? maxLines}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (label.isNotEmpty) ...[
-            SizedBox(
-              width: 120,
-              child: Text(
-                '$label:',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey,
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
             ),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 14,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback onPressed) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: color.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
               ),
-              maxLines: maxLines,
-              overflow: maxLines != null ? TextOverflow.ellipsis : null,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _formatSpecificationsForDisplay(Map<String, dynamic> specifications) {
-    if (specifications.isEmpty) return '';
-    return specifications.entries
-        .map((e) => e.value == true ? e.key : '${e.key}: ${e.value}')
-        .join(', ');
-  }
-}
-
-class _StatusChangeDialog extends ConsumerStatefulWidget {
-  final Room room;
-  
-  const _StatusChangeDialog({required this.room});
-
-  @override
-  ConsumerState<_StatusChangeDialog> createState() => _StatusChangeDialogState();
-}
-
-class _StatusChangeDialogState extends ConsumerState<_StatusChangeDialog> {
-  late RoomStatus _selectedStatus;
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedStatus = widget.room.status;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Change Status - ${widget.room.roomNumber}'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Current Status: ${widget.room.status.name.toUpperCase()}'),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<RoomStatus>(
-            value: _selectedStatus,
-            decoration: const InputDecoration(
-              labelText: 'New Status *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.update),
-            ),
-            items: RoomStatus.values.map((status) {
-              return DropdownMenuItem(
-                value: status,
-                child: Text(status.name.toUpperCase()),
-              );
-            }).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _selectedStatus = value;
-                });
-              }
-            },
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _updateStatus,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Update Status'),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _updateStatus() async {
-    if (_selectedStatus == widget.room.status) {
-      Navigator.of(context).pop();
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final roomService = ref.read(roomServiceProvider);
-      await roomService.updateRoomStatus(widget.room.id, _selectedStatus);
-      
-      if (mounted) {
-        Navigator.of(context).pop();
-        ref.invalidate(roomsProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Room status updated to ${_selectedStatus.name.toUpperCase()}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating status: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 }
