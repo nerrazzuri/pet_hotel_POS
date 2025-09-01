@@ -16,36 +16,6 @@ class MvpStatusIndicator extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.rocket_launch, color: Colors.green[700]),
-                const SizedBox(width: 8),
-                const Text(
-                  'MVP Mode Active',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${enabledModules.length} Active',
-                    style: TextStyle(
-                      color: Colors.green[700],
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             const Text(
               'Enabled Modules:',
               style: TextStyle(
@@ -108,8 +78,8 @@ class MvpStatusIndicator extends StatelessWidget {
     switch (moduleName) {
       case 'pos':
         return 'POS System';
-      case 'booking':
-        return 'Booking & Rooms';
+             case 'booking':
+         return 'Booking Management';
       case 'customers':
         return 'Customer & Pet Profiles';
       case 'services':
