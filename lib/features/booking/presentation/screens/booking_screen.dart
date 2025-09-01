@@ -5,8 +5,6 @@ import 'package:cat_hotel_pos/features/booking/domain/entities/room.dart';
 import 'package:cat_hotel_pos/features/booking/presentation/providers/booking_providers.dart';
 import 'package:cat_hotel_pos/features/booking/presentation/widgets/calendar_view.dart';
 import 'package:cat_hotel_pos/features/booking/presentation/widgets/enhanced_calendar_view.dart';
-import 'package:cat_hotel_pos/features/booking/presentation/widgets/occupancy_board.dart';
-import 'package:cat_hotel_pos/features/booking/presentation/widgets/housekeeping_status.dart';
 import 'package:cat_hotel_pos/features/booking/presentation/widgets/waitlist_management.dart';
 import 'package:cat_hotel_pos/features/booking/presentation/widgets/create_booking_dialog.dart';
 import 'package:cat_hotel_pos/features/booking/presentation/widgets/edit_booking_dialog.dart';
@@ -36,7 +34,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -209,8 +207,6 @@ class _BookingScreenState extends ConsumerState<BookingScreen>
             Tab(text: 'Calendar', icon: Icon(Icons.calendar_month)),
             Tab(text: 'Enhanced', icon: Icon(Icons.calendar_view_week)),
             Tab(text: 'Waitlist', icon: Icon(Icons.queue)),
-            Tab(text: 'Occupancy', icon: Icon(Icons.grid_view)),
-            Tab(text: 'Housekeeping', icon: Icon(Icons.cleaning_services)),
           ],
         ),
         actions: [
@@ -255,10 +251,6 @@ class _BookingScreenState extends ConsumerState<BookingScreen>
           const EnhancedCalendarView(),
           // Waitlist Tab
           const WaitlistManagement(),
-          // Occupancy Tab
-          const OccupancyBoard(),
-          // Housekeeping Tab
-          const HousekeepingStatus(),
         ],
       ),
     );

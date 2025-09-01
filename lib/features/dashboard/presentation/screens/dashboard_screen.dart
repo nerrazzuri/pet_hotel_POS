@@ -30,7 +30,7 @@ import 'package:cat_hotel_pos/features/reports/presentation/screens/reports_scre
 import 'package:cat_hotel_pos/features/payments/presentation/screens/payments_screen.dart';
 import 'package:cat_hotel_pos/features/services/presentation/screens/services_screen.dart';
 import 'package:cat_hotel_pos/core/app_config.dart';
-import 'package:cat_hotel_pos/features/dashboard/presentation/widgets/mvp_status_indicator.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -327,9 +327,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildUserInfoCardWithRoleSummary(),
           SizedBox(height: spacing),
           _buildStatisticsAndStatusRow(),
-          SizedBox(height: spacing),
-          // MVP Status Indicator
-          const MvpStatusIndicator(),
           SizedBox(height: spacing),
           // Add HR module for staff-level users
           if (_currentUser != null && _isStaffLevelUser(_currentUser!)) ...[
