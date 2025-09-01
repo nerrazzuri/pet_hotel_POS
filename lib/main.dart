@@ -26,6 +26,7 @@ import 'package:cat_hotel_pos/features/payments/presentation/screens/payments_sc
 import 'package:cat_hotel_pos/features/services/presentation/screens/services_screen.dart';
 import 'package:cat_hotel_pos/features/setup_wizard/presentation/screens/setup_wizard_screen.dart';
 import 'package:cat_hotel_pos/core/widgets/custom_window_demo.dart';
+import 'package:cat_hotel_pos/core/app_config.dart';
 
 // Import window manager for custom window frame
 import 'package:window_manager/window_manager.dart';
@@ -118,7 +119,7 @@ void main() async {
     print('Error initializing secure storage: $e');
   }
   
-  await AppConfig.initialize();
+  AppConfig.initialize();
   print('AppConfig initialized');
   
   print('All services initialized, running app...');
@@ -143,56 +144,107 @@ class CatHotelPOSApp extends StatelessWidget {
       ),
       themeMode: ThemeMode.system,
       home: GlobalAppHelpers.wrapLoginScreen(const LoginScreen()),
-      routes: {
-        '/dashboard': (context) => GlobalAppHelpers.wrapDashboardScreen(const DashboardScreen()),
-        '/pos': (context) => GlobalAppHelpers.wrapPOSScreen(const POSScreen()),
-        '/staff': (context) => GlobalAppHelpers.wrapScreen(
-          child: const StaffManagementScreen(),
-          title: 'Staff Management',
-          titleBarColor: Colors.indigo[700],
-        ),
-        '/settings': (context) => GlobalAppHelpers.wrapSettingsScreen(const SettingsScreen()),
-        '/financials': (context) => GlobalAppHelpers.wrapFinancialScreen(const FinancialOperationsScreen()),
-        '/customers': (context) => GlobalAppHelpers.wrapCustomerScreen(const CustomerPetProfilesScreen()),
-        '/loyalty': (context) => GlobalAppHelpers.wrapScreen(
-          child: const LoyaltyManagementScreen(),
-          title: 'Loyalty Program',
-          titleBarColor: Colors.pink[700],
-        ),
-        '/crm': (context) => GlobalAppHelpers.wrapScreen(
-          child: const CrmManagementScreen(),
-          title: 'CRM Management',
-          titleBarColor: Colors.green[700],
-        ),
-        '/booking': (context) => GlobalAppHelpers.wrapBookingScreen(const BookingScreen()),
-        '/rooms': (context) => GlobalAppHelpers.wrapScreen(
-          child: const RoomManagementScreen(),
-          title: 'Room Management',
-          titleBarColor: Colors.red[700],
-        ),
-        '/inventory': (context) => GlobalAppHelpers.wrapInventoryScreen(const InventoryScreen()),
-        '/reports': (context) => GlobalAppHelpers.wrapReportsScreen(const ReportsScreen()),
-        '/payments': (context) => GlobalAppHelpers.wrapScreen(
-          child: const PaymentsScreen(),
-          title: 'Payment Processing',
-          titleBarColor: Colors.blue[700],
-        ),
-        '/services': (context) => GlobalAppHelpers.wrapServicesScreen(const ServicesScreen()),
-        '/setup-wizard': (context) => GlobalAppHelpers.wrapScreen(
-          child: const SetupWizardScreen(),
-          title: 'Setup Wizard',
-          titleBarColor: Colors.grey[700],
-        ),
-        '/custom-window-demo': (context) => GlobalAppHelpers.wrapScreen(
-          child: const CustomWindowDemo(),
-          title: 'Custom Window Demo',
-          titleBarColor: Colors.purple[700],
-        ),
-      },
+      routes: _buildMvpRoutes(),
     );
 
     // For desktop platforms, return the app directly
     // Custom window frame will be implemented differently
     return app;
+  }
+
+  /// Build routes based on MVP module configuration
+  static Map<String, WidgetBuilder> _buildMvpRoutes() {
+    final routes = <String, WidgetBuilder>{
+      '/dashboard': (context) => GlobalAppHelpers.wrapDashboardScreen(const DashboardScreen()),
+    };
+
+    // Add MVP Required Modules
+    if (AppConfig.isModuleEnabled('pos')) {
+      routes['/pos'] = (context) => GlobalAppHelpers.wrapPOSScreen(const POSScreen());
+    }
+
+    if (AppConfig.isModuleEnabled('staff')) {
+      routes['/staff'] = (context) => GlobalAppHelpers.wrapScreen(
+        child: const StaffManagementScreen(),
+        title: 'Staff Management',
+        titleBarColor: Colors.indigo[700],
+      );
+    }
+
+    if (AppConfig.isModuleEnabled('customers')) {
+      routes['/customers'] = (context) => GlobalAppHelpers.wrapCustomerScreen(const CustomerPetProfilesScreen());
+    }
+
+    if (AppConfig.isModuleEnabled('booking')) {
+      routes['/booking'] = (context) => GlobalAppHelpers.wrapBookingScreen(const BookingScreen());
+      routes['/rooms'] = (context) => GlobalAppHelpers.wrapScreen(
+        child: const RoomManagementScreen(),
+        title: 'Room Management',
+        titleBarColor: Colors.red[700],
+      );
+    }
+
+    if (AppConfig.isModuleEnabled('reports')) {
+      routes['/reports'] = (context) => GlobalAppHelpers.wrapReportsScreen(const ReportsScreen());
+    }
+
+    if (AppConfig.isModuleEnabled('payments')) {
+      routes['/payments'] = (context) => GlobalAppHelpers.wrapScreen(
+        child: const PaymentsScreen(),
+        title: 'Payment Processing',
+        titleBarColor: Colors.blue[700],
+      );
+    }
+
+    if (AppConfig.isModuleEnabled('services')) {
+      routes['/services'] = (context) => GlobalAppHelpers.wrapServicesScreen(const ServicesScreen());
+    }
+
+    // Add Non-MVP Modules (disabled but kept for future enhancement)
+    if (AppConfig.isModuleEnabled('settings')) {
+      routes['/settings'] = (context) => GlobalAppHelpers.wrapSettingsScreen(const SettingsScreen());
+    }
+
+    if (AppConfig.isModuleEnabled('financials')) {
+      routes['/financials'] = (context) => GlobalAppHelpers.wrapFinancialScreen(const FinancialOperationsScreen());
+    }
+
+    if (AppConfig.isModuleEnabled('loyalty')) {
+      routes['/loyalty'] = (context) => GlobalAppHelpers.wrapScreen(
+        child: const LoyaltyManagementScreen(),
+        title: 'Loyalty Program',
+        titleBarColor: Colors.pink[700],
+      );
+    }
+
+    if (AppConfig.isModuleEnabled('crm')) {
+      routes['/crm'] = (context) => GlobalAppHelpers.wrapScreen(
+        child: const CrmManagementScreen(),
+        title: 'CRM Management',
+        titleBarColor: Colors.green[700],
+      );
+    }
+
+    if (AppConfig.isModuleEnabled('inventory')) {
+      routes['/inventory'] = (context) => GlobalAppHelpers.wrapInventoryScreen(const InventoryScreen());
+    }
+
+    if (AppConfig.isModuleEnabled('setup_wizard')) {
+      routes['/setup-wizard'] = (context) => GlobalAppHelpers.wrapScreen(
+        child: const SetupWizardScreen(),
+        title: 'Setup Wizard',
+        titleBarColor: Colors.grey[700],
+      );
+    }
+
+    // Demo route (always available for development)
+    routes['/custom-window-demo'] = (context) => GlobalAppHelpers.wrapScreen(
+      child: const CustomWindowDemo(),
+      title: 'Custom Window Demo',
+      titleBarColor: Colors.purple[700],
+    );
+
+    print('MVP Routes configured: ${routes.keys.join(', ')}');
+    return routes;
   }
 }

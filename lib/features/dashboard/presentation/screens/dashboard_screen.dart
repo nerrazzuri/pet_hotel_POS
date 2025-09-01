@@ -29,6 +29,8 @@ import 'package:cat_hotel_pos/features/inventory/presentation/screens/inventory_
 import 'package:cat_hotel_pos/features/reports/presentation/screens/reports_screen.dart';
 import 'package:cat_hotel_pos/features/payments/presentation/screens/payments_screen.dart';
 import 'package:cat_hotel_pos/features/services/presentation/screens/services_screen.dart';
+import 'package:cat_hotel_pos/core/app_config.dart';
+import 'package:cat_hotel_pos/features/dashboard/presentation/widgets/mvp_status_indicator.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -325,6 +327,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _buildUserInfoCardWithRoleSummary(),
           SizedBox(height: spacing),
           _buildStatisticsAndStatusRow(),
+          SizedBox(height: spacing),
+          // MVP Status Indicator
+          const MvpStatusIndicator(),
           SizedBox(height: spacing),
           // Add HR module for staff-level users
           if (_currentUser != null && _isStaffLevelUser(_currentUser!)) ...[
@@ -663,8 +668,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     print('Dashboard: User permissions: ${user.permissions}');
     print('Dashboard: User isActive: ${user.isActive}');
 
-    // POS System - Available to all active users
-    if (user.isActive) {
+    // POS System - Available to all active users (MVP Required)
+    if (user.isActive && AppConfig.isModuleEnabled('pos')) {
       print('Dashboard: Adding POS System for user: ${user.username}');
       modules.add(_buildModuleCard(
         'POS System',
@@ -675,14 +680,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Staff Management - Manager, Owner, Admin only
+    // Staff Management - Manager, Owner, Admin only (MVP Required)
     final hasStaffPermission = permissionService.hasPermission(user, SystemPermissions.manageStaff) ||
         user.role == UserRole.manager ||
         user.role == UserRole.owner ||
         user.role == UserRole.administrator;
     
     print('Dashboard: Staff Management permission check: $hasStaffPermission');
-    if (hasStaffPermission) {
+    if (hasStaffPermission && AppConfig.isModuleEnabled('staff')) {
       print('Dashboard: Adding Staff Management for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Staff Management',
@@ -693,10 +698,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Customer & Pet Profiles - All users can view, some can edit
+    // Customer & Pet Profiles - All users can view, some can edit (MVP Required)
     final hasCustomerPermission = permissionService.hasPermission(user, SystemPermissions.viewCustomer);
     print('Dashboard: Customer permission check: $hasCustomerPermission');
-    if (hasCustomerPermission) {
+    if (hasCustomerPermission && AppConfig.isModuleEnabled('customers')) {
       print('Dashboard: Adding Customer & Pet Profiles for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Customer & Pet Profiles',
@@ -707,14 +712,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Financial Operations - Manager, Owner, Admin only
+    // Financial Operations - Manager, Owner, Admin only (Non-MVP)
     final hasFinancialPermission = permissionService.hasPermission(user, SystemPermissions.viewFinancials) ||
         user.role == UserRole.manager ||
         user.role == UserRole.owner ||
         user.role == UserRole.administrator;
     
     print('Dashboard: Financial permission check: $hasFinancialPermission');
-    if (hasFinancialPermission) {
+    if (hasFinancialPermission && AppConfig.isModuleEnabled('financials')) {
       print('Dashboard: Adding Financial Operations for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Financial Operations',
@@ -725,14 +730,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Settings - Manager, Owner, Admin only
+    // Settings - Manager, Owner, Admin only (Non-MVP)
     final hasSettingsPermission = permissionService.hasPermission(user, SystemPermissions.viewSettings) ||
         user.role == UserRole.manager ||
         user.role == UserRole.owner ||
         user.role == UserRole.administrator;
     
     print('Dashboard: Settings permission check: $hasSettingsPermission');
-    if (hasSettingsPermission) {
+    if (hasSettingsPermission && AppConfig.isModuleEnabled('settings')) {
       print('Dashboard: Adding Settings for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Settings',
@@ -743,10 +748,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Setup Wizard - Owner, Admin only
+    // Setup Wizard - Owner, Admin only (Non-MVP)
     final hasSetupWizardPermission = user.role == UserRole.owner || user.role == UserRole.administrator;
     print('Dashboard: Setup Wizard permission check: $hasSetupWizardPermission');
-    if (hasSetupWizardPermission) {
+    if (hasSetupWizardPermission && AppConfig.isModuleEnabled('setup_wizard')) {
       print('Dashboard: Adding Setup Wizard for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Setup Wizard',
@@ -757,13 +762,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Loyalty & CRM - Owner, Admin only
+    // Loyalty & CRM - Owner, Admin only (Non-MVP)
     final hasLoyaltyPermission = permissionService.hasPermission(user, SystemPermissions.manageLoyalty) ||
         user.role == UserRole.owner ||
         user.role == UserRole.administrator;
     
     print('Dashboard: Loyalty permission check: $hasLoyaltyPermission');
-    if (hasLoyaltyPermission) {
+    if (hasLoyaltyPermission && AppConfig.isModuleEnabled('loyalty')) {
       print('Dashboard: Adding Loyalty & CRM for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Loyalty & CRM',
@@ -774,10 +779,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // CRM Management - Owner, Admin only
+    // CRM Management - Owner, Admin only (Non-MVP)
     final hasCrmPermission = user.role == UserRole.owner || user.role == UserRole.administrator;
     print('Dashboard: CRM permission check: $hasCrmPermission');
-    if (hasCrmPermission) {
+    if (hasCrmPermission && AppConfig.isModuleEnabled('crm')) {
       print('Dashboard: Adding CRM Management for user: ${user.username}');
       modules.add(_buildModuleCard(
         'CRM Management',
@@ -788,10 +793,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Booking & Room Management - Staff can view, Manager+ can manage
+    // Booking & Room Management - Staff can view, Manager+ can manage (MVP Required)
     final hasBookingPermission = permissionService.hasPermission(user, SystemPermissions.viewBookings);
     print('Dashboard: Booking permission check: $hasBookingPermission');
-    if (hasBookingPermission) {
+    if (hasBookingPermission && AppConfig.isModuleEnabled('booking')) {
       print('Dashboard: Adding Booking & Room Management for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Booking & Room Management',
@@ -802,14 +807,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Room Management - Manager, Owner, Admin only
+    // Room Management - Manager, Owner, Admin only (Part of Booking MVP)
     final hasRoomPermission = permissionService.hasPermission(user, SystemPermissions.manageRooms) ||
         user.role == UserRole.manager ||
         user.role == UserRole.owner ||
         user.role == UserRole.administrator;
     
     print('Dashboard: Room permission check: $hasRoomPermission');
-    if (hasRoomPermission) {
+    if (hasRoomPermission && AppConfig.isModuleEnabled('booking')) {
       print('Dashboard: Adding Room Management for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Room Management',
@@ -820,14 +825,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Inventory & Purchasing - Manager, Owner, Admin only
+    // Inventory & Purchasing - Manager, Owner, Admin only (Non-MVP)
     final hasInventoryPermission = permissionService.hasPermission(user, SystemPermissions.viewInventory) ||
         user.role == UserRole.manager ||
         user.role == UserRole.owner ||
         user.role == UserRole.administrator;
     
     print('Dashboard: Inventory permission check: $hasInventoryPermission');
-    if (hasInventoryPermission) {
+    if (hasInventoryPermission && AppConfig.isModuleEnabled('inventory')) {
       print('Dashboard: Adding Inventory & Purchasing for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Inventory & Purchasing',
@@ -838,10 +843,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Reports & Analytics - Different levels based on role
+    // Reports & Analytics - Different levels based on role (MVP Required)
     final hasReportsPermission = permissionService.hasPermission(user, SystemPermissions.viewBasicReports);
     print('Dashboard: Reports permission check: $hasReportsPermission');
-    if (hasReportsPermission) {
+    if (hasReportsPermission && AppConfig.isModuleEnabled('reports')) {
       String description = 'Business insights and performance reports';
       if (permissionService.hasPermission(user, SystemPermissions.viewAnalytics)) {
         description = 'Advanced analytics and business insights';
@@ -857,13 +862,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Payment Processing - Manager, Owner, Admin only
+    // Payment Processing - Manager, Owner, Admin only (MVP Required)
     final hasPaymentPermission = user.role == UserRole.manager ||
         user.role == UserRole.owner ||
         user.role == UserRole.administrator;
     
     print('Dashboard: Payment permission check: $hasPaymentPermission');
-    if (hasPaymentPermission) {
+    if (hasPaymentPermission && AppConfig.isModuleEnabled('payments')) {
       print('Dashboard: Adding Payment Processing for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Payment Processing',
@@ -874,13 +879,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Services Management - Owner, Admin only
+    // Services Management - Owner, Admin only (MVP Required)
     final hasServicesPermission = permissionService.hasPermission(user, SystemPermissions.manageServices) ||
         user.role == UserRole.owner ||
         user.role == UserRole.administrator;
     
     print('Dashboard: Services permission check: $hasServicesPermission');
-    if (hasServicesPermission) {
+    if (hasServicesPermission && AppConfig.isModuleEnabled('services')) {
       print('Dashboard: Adding Services Management for user: ${user.username}');
       modules.add(_buildModuleCard(
         'Services Management',

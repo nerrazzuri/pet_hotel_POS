@@ -1,8 +1,67 @@
 # PENDING TASKS - POS System
 
+## 🎯 **MVP Module Configuration**
+
+### ✅ **MVP Required Modules (Enabled)**
+1. **Sales Register (POS Front Desk)** - `pos`
+   - Add services/products, checkout, print/email receipts, basic discounts
+2. **Booking & Room/Cage Management** - `booking`
+   - Calendar view, create reservations, assign room/cage, occupancy board
+3. **Customer & Pet Profiles** - `customers`
+   - Owner info, multiple pets per owner, vaccination record with expiry checks
+4. **Services & Products** - `services`
+   - Boarding, daycare, grooming as services; add a few retail items
+5. **Payments & Invoicing** - `payments`
+   - Cash, card, and one e-wallet/QR (DuitNow/TNG) with receipt
+6. **Reports (Basic)** - `reports`
+   - Daily Z-report (end-of-day totals), simple revenue by date
+7. **Staff & Roles (Basic)** - `staff`
+   - Staff login vs Manager login (for refunds/overrides)
+
+### 🔒 **Non-MVP Modules (Disabled for Future Enhancement)**
+- **Financial Operations** - `financials` - Advanced financial operations
+- **Loyalty Programs** - `loyalty` - Loyalty program management
+- **CRM Management** - `crm` - Customer relationship management
+- **Inventory & Purchasing** - `inventory` - Inventory management
+- **Settings** - `settings` - Advanced system settings
+- **Setup Wizard** - `setup_wizard` - System setup wizard
+
+### 🔧 **Configuration Control**
+- Module visibility controlled via `AppConfig.isModuleEnabled()`
+- Routes dynamically generated based on MVP configuration
+- Dashboard shows only enabled modules
+- MVP Status Indicator displays current configuration
+
 ## High Priority
 
-### 1. Fix Hold Cart Tray Buttons ✅
+### 1. MVP Module Configuration Implementation ✅
+- **Description**: Implement MVP module configuration to disable non-essential modules while keeping code for future enhancement
+- **Components**:
+  - ✅ AppConfig MVP Configuration: Added module enable/disable control system
+  - ✅ Dashboard Module Filtering: Updated dashboard to show only enabled modules
+  - ✅ Dynamic Route Generation: Routes generated based on MVP configuration
+  - ✅ MVP Status Indicator: Visual indicator showing enabled/disabled modules
+  - ✅ Module Comments: Added MVP/non-MVP comments for clarity
+- **MVP Required Modules (Enabled)**:
+  - ✅ POS System (`pos`) - Sales register functionality
+  - ✅ Booking & Room Management (`booking`) - Reservation and room management
+  - ✅ Customer & Pet Profiles (`customers`) - Customer and pet information
+  - ✅ Services & Products (`services`) - Service and product management
+  - ✅ Payments & Invoicing (`payments`) - Payment processing
+  - ✅ Reports (`reports`) - Basic reporting functionality
+  - ✅ Staff & Roles (`staff`) - Staff management and roles
+- **Non-MVP Modules (Disabled)**:
+  - ✅ Financial Operations (`financials`) - Advanced financial features
+  - ✅ Loyalty Programs (`loyalty`) - Loyalty program management
+  - ✅ CRM Management (`crm`) - Customer relationship management
+  - ✅ Inventory & Purchasing (`inventory`) - Inventory management
+  - ✅ Settings (`settings`) - Advanced system settings
+  - ✅ Setup Wizard (`setup_wizard`) - System setup wizard
+- **Status**: 🟢 Complete
+- **Priority**: High
+- **Resolution**: Successfully implemented MVP module configuration system with dynamic module visibility, route generation, and visual status indicators. All non-MVP modules are disabled but code is preserved for future enhancement.
+
+### 2. Fix Hold Cart Tray Buttons ✅
 - **File**: `lib/features/pos/presentation/widgets/held_carts_drawer.dart`
 - **Issue**: "Recall" and "Delete" buttons in the held carts drawer are not functioning
 - **Status**: 🟢 Complete
