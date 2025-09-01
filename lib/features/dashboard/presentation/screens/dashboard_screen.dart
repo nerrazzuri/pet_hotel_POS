@@ -793,13 +793,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ));
     }
 
-    // Booking & Room Management - Staff can view, Manager+ can manage (MVP Required)
+    // Booking Management - Staff can view, Manager+ can manage (MVP Required)
     final hasBookingPermission = permissionService.hasPermission(user, SystemPermissions.viewBookings);
     print('Dashboard: Booking permission check: $hasBookingPermission');
     if (hasBookingPermission && AppConfig.isModuleEnabled('booking')) {
-      print('Dashboard: Adding Booking & Room Management for user: ${user.username}');
+      print('Dashboard: Adding Booking Management for user: ${user.username}');
       modules.add(_buildModuleCard(
-        'Booking & Room Management',
+        'Booking Management',
         'Manage reservations and room availability',
         Icons.hotel,
         Colors.indigo,
