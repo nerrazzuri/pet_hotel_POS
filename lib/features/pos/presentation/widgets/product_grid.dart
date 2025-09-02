@@ -380,27 +380,33 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 											// Price and Duration
 											Row(
 												children: [
-													Text(
-														'\$${product['price'].toStringAsFixed(2)}',
-														style: theme.textTheme.titleMedium?.copyWith(
-															fontWeight: FontWeight.bold,
-															color: product['color'],
-															fontSize: 14,
+													Flexible(
+														child: Text(
+															'\$${product['price'].toStringAsFixed(2)}',
+															style: theme.textTheme.titleMedium?.copyWith(
+																fontWeight: FontWeight.bold,
+																color: product['color'],
+																fontSize: 14,
+															),
+															overflow: TextOverflow.ellipsis,
 														),
 													),
 													const SizedBox(width: 8),
-													Container(
-														padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-														decoration: BoxDecoration(
-															color: product['color'].withOpacity(0.1),
-															borderRadius: BorderRadius.circular(4),
-														),
-														child: Text(
-															product['duration'],
-															style: theme.textTheme.bodySmall?.copyWith(
-																color: product['color'],
-																fontSize: 9,
-																fontWeight: FontWeight.w500,
+													Flexible(
+														child: Container(
+															padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+															decoration: BoxDecoration(
+																color: product['color'].withOpacity(0.1),
+																borderRadius: BorderRadius.circular(4),
+															),
+															child: Text(
+																product['duration'],
+																style: theme.textTheme.bodySmall?.copyWith(
+																	color: product['color'],
+																	fontSize: 9,
+																	fontWeight: FontWeight.w500,
+																),
+																overflow: TextOverflow.ellipsis,
 															),
 														),
 													),

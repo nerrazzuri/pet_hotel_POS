@@ -139,15 +139,15 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
             ),
             const SizedBox(width: 8),
             Flexible(
-              child: Text(
-                'Payment Method',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-                overflow: TextOverflow.ellipsis,
+              child:             Text(
+              'Payment Method',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
               ),
+              overflow: TextOverflow.ellipsis,
+            ),
             ),
           ],
         ),
@@ -288,7 +288,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -305,7 +305,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         Text(
           'Select Card Type:',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: Colors.grey[700],
           ),
@@ -365,7 +365,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -380,7 +380,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         Text(
           'Select E-Wallet:',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: Colors.grey[700],
           ),
@@ -442,12 +442,79 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
             borderRadius: BorderRadius.circular(6),
           ),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        ),
+        child: _buildEWalletLogo(type, label),
       ),
     );
+  }
+
+  Widget _buildEWalletLogo(String type, String label) {
+    switch (type) {
+      case 'tng':
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '📱', // Touch n Go emoji representation
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'TNG',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+            ),
+          ],
+        );
+      case 'grabpay':
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '🚗', // Grab car emoji representation
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Grab',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+            ),
+          ],
+        );
+      case 'mae':
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '🏦', // Bank emoji representation
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'MAE',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+            ),
+          ],
+        );
+      case 'boost':
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '⚡', // Boost/energy emoji representation
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Boost',
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+            ),
+          ],
+        );
+      default:
+        return Text(
+          label,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+        );
+    }
   }
 
   Widget _buildBankTransferOptions(BoxConstraints constraints) {
@@ -459,7 +526,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         Text(
           'Bank Transfer Details:',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: Colors.grey[700],
           ),
@@ -506,7 +573,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
@@ -515,7 +582,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
           Text(
             value,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12,
               color: Colors.grey[800],
               fontWeight: FontWeight.w600,
             ),
@@ -540,7 +607,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
             Text(
               'Amount Paid',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
               ),
@@ -562,7 +629,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
               Text(
                 '\$${_amountPaidController.text.isEmpty ? '0.00' : _amountPaidController.text}',
                 style: const TextStyle(
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.teal,
                 ),
@@ -572,7 +639,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
               Text(
                 'Click numbers to enter amount',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   color: Colors.grey[600],
                 ),
                 textAlign: TextAlign.center,
@@ -603,7 +670,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
                   style: TextStyle(
                     color: Colors.green[700],
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 12,
                   ),
                 ),
               ],

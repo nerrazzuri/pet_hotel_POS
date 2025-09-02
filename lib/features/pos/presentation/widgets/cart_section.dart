@@ -87,14 +87,14 @@ class CartSection extends ConsumerWidget {
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurface,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
                   Text(
                     '${cartItems.length} item${cartItems.length == 1 ? '' : 's'}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
-                      fontSize: 11,
+                      fontSize: 10,
                     ),
                   ),
                 ],
@@ -268,7 +268,7 @@ class CartSection extends ConsumerWidget {
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSurface,
-                      fontSize: 14,
+                      fontSize: 12,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -279,6 +279,7 @@ class CartSection extends ConsumerWidget {
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
+                      fontSize: 10,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -289,7 +290,7 @@ class CartSection extends ConsumerWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: _getCategoryColor(item.category),
-                          fontSize: 14,
+                          fontSize: 12,
                         ),
                       ),
                       const Spacer(),
@@ -298,7 +299,7 @@ class CartSection extends ConsumerWidget {
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface,
-                          fontSize: 14,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -324,7 +325,7 @@ class CartSection extends ConsumerWidget {
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onPrimaryContainer,
-                      fontSize: 14,
+                      fontSize: 12,
                     ),
                   ),
                 ),
@@ -427,7 +428,7 @@ class CartSection extends ConsumerWidget {
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
-                  fontSize: 16,
+                  fontSize: 14,
                 ),
               ),
               Text(
@@ -435,7 +436,7 @@ class CartSection extends ConsumerWidget {
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.primary,
-                  fontSize: 18,
+                  fontSize: 16,
                 ),
               ),
             ],
