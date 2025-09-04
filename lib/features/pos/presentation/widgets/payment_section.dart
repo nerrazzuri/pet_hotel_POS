@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cat_hotel_pos/features/pos/presentation/providers/pos_providers.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class PaymentSection extends ConsumerStatefulWidget {
   const PaymentSection({super.key});
@@ -459,21 +460,34 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(4),
-          child: Image.asset(
-            imagePath,
-            width: 20,
-            height: 20,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              // Fallback to emoji if image not found
-              return Center(
-                child: Text(
-                  fallbackEmoji,
-                  style: const TextStyle(fontSize: 16),
+          child: imagePath.endsWith('.svg')
+              ? SvgPicture.asset(
+                  imagePath,
+                  width: 20,
+                  height: 20,
+                  fit: BoxFit.contain,
+                  placeholderBuilder: (context) => Center(
+                    child: Text(
+                      fallbackEmoji,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                )
+              : Image.asset(
+                  imagePath,
+                  width: 20,
+                  height: 20,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback to emoji if image not found
+                    return Center(
+                      child: Text(
+                        fallbackEmoji,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       );
     }
