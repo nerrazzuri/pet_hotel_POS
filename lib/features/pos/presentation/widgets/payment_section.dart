@@ -427,7 +427,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
 
   Widget _buildEWalletButton(String type, String label, Color color) {
     return SizedBox(
-      height: 40,
+      height: 44,
       child: ElevatedButton(
         onPressed: () {
           setState(() {
@@ -448,16 +448,43 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
   }
 
   Widget _buildEWalletLogo(String type, String label) {
+    // Standardized logo container for consistent sizing
+    Widget _buildLogoContainer(String imagePath, String fallbackEmoji) {
+      return Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          color: Colors.white.withOpacity(0.1),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.asset(
+            imagePath,
+            width: 20,
+            height: 20,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              // Fallback to emoji if image not found
+              return Center(
+                child: Text(
+                  fallbackEmoji,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     switch (type) {
       case 'tng':
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              '📱', // Touch n Go emoji representation
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(width: 4),
+            _buildLogoContainer('assets/images/ewallet/tng.png', '📱'),
+            const SizedBox(width: 6),
             Text(
               'TNG',
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
@@ -468,11 +495,8 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              '🚗', // Grab car emoji representation
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(width: 4),
+            _buildLogoContainer('assets/images/ewallet/grabpay.png', '🚗'),
+            const SizedBox(width: 6),
             Text(
               'Grab',
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
@@ -483,11 +507,8 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              '🏦', // Bank emoji representation
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(width: 4),
+            _buildLogoContainer('assets/images/ewallet/mae.png', '🏦'),
+            const SizedBox(width: 6),
             Text(
               'MAE',
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
@@ -498,11 +519,8 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              '⚡', // Boost/energy emoji representation
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(width: 4),
+            _buildLogoContainer('assets/images/ewallet/boost.svg', '⚡'),
+            const SizedBox(width: 6),
             Text(
               'Boost',
               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
