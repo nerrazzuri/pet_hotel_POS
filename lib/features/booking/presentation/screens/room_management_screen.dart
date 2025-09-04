@@ -342,62 +342,62 @@ class _RoomManagementScreenState extends ConsumerState<RoomManagementScreen> {
 
   Widget _buildRoomsList(AsyncValue<List<Room>> roomsAsync) {
     return roomsAsync.when(
-      data: (rooms) {
-        if (rooms.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.hotel_outlined, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text(
-                  'No rooms found',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Add your first room to get started',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          );
-        }
-        
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: rooms.length,
-          itemBuilder: (context, index) {
-            final room = rooms[index];
-            return _RoomCard(
-              room: room,
-              onEdit: () => _showEditRoomDialog(context, room),
-              onDelete: () => _showDeleteRoomDialog(context, room),
-              onView: () => _showRoomDetailsDialog(context, room),
-              onStatusChange: (room) => _showStatusChangeDialog(context, room),
-            );
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading rooms',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.red,
+        data: (rooms) {
+          if (rooms.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.hotel_outlined, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No rooms found',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Add your first room to get started',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
               ),
-            ),
-          ],
+            );
+          }
+          
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: rooms.length,
+            itemBuilder: (context, index) {
+              final room = rooms[index];
+                             return _RoomCard(
+                 room: room,
+                 onEdit: () => _showEditRoomDialog(context, room),
+                 onDelete: () => _showDeleteRoomDialog(context, room),
+                 onView: () => _showRoomDetailsDialog(context, room),
+                 onStatusChange: (room) => _showStatusChangeDialog(context, room),
+               );
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                'Error loading rooms',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error.toString(),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.red,
+                ),
+              ),
+            ],
         ),
       ),
     );
@@ -576,30 +576,30 @@ class _RoomCard extends StatelessWidget {
             width: 1,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Row
-              Row(
-                children: [
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row
+            Row(
+              children: [
                   // Room Number Badge
-                  Container(
+                          Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
+                            decoration: BoxDecoration(
                       color: _getTypeColor(room.type),
                       borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
+                            ),
+                            child: Text(
                       room.roomNumber,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
                         fontSize: 12,
-                      ),
-                    ),
-                  ),
+                              ),
+                            ),
+                          ),
                   const Spacer(),
                   // Status Badge
                   Container(
@@ -623,11 +623,11 @@ class _RoomCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              
+            const SizedBox(height: 16),
+            
               // Room Info
-              Row(
-                children: [
+            Row(
+              children: [
                   CircleAvatar(
                     backgroundColor: _getTypeColor(room.type).withOpacity(0.1),
                     child: Icon(
@@ -637,32 +637,32 @@ class _RoomCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+              Text(
                           room.name,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+          Text(
                           room.type.displayName,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
+              color: Colors.grey[600],
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
-              ),
+            ),
+          ),
+        ],
+      ),
               const SizedBox(height: 16),
               
               // Room Details Grid
               Row(
-                children: [
+              children: [
                   Expanded(
                     child: _buildDetailItem(
                       'Capacity',
@@ -683,29 +683,29 @@ class _RoomCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
+                Row(
+                  children: [
+                    Expanded(
                     child: _buildDetailItem(
                       'Type',
                       room.type.displayName,
                       Icons.category,
                       Colors.blue[700]!,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
+                    const SizedBox(width: 16),
+                    Expanded(
                     child: _buildDetailItem(
                       'Status',
                       room.status.name.toUpperCase(),
                       Icons.info,
                       Colors.orange[700]!,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              
+                  ],
+                ),
+                const SizedBox(height: 16),
+
               // Action Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -745,8 +745,8 @@ class _RoomCard extends StatelessWidget {
 
   Widget _buildDetailItem(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -754,18 +754,18 @@ class _RoomCard extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+          Row(
+      children: [
               Icon(icon, color: color, size: 16),
               const SizedBox(width: 8),
-              Text(
+        Text(
                 label,
                 style: TextStyle(
                   color: color,
-                  fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
               ),
@@ -773,10 +773,10 @@ class _RoomCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            value,
-            style: const TextStyle(
+              value,
+              style: const TextStyle(
               fontWeight: FontWeight.w500,
-              fontSize: 14,
+                fontSize: 14,
             ),
           ),
         ],
@@ -799,8 +799,8 @@ class _RoomCard extends StatelessWidget {
           ),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        mainAxisSize: MainAxisSize.min,
+        children: [
             Icon(icon, color: color, size: 16),
             const SizedBox(height: 2),
             Text(
@@ -810,9 +810,9 @@ class _RoomCard extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
       ),
     );
   }
