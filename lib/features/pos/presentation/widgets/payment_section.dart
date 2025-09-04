@@ -497,7 +497,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildLogoContainer('assets/images/ewallet/tng.png', '📱'),
+            _buildLogoContainer('images/ewallet/tng.png', '📱'),
             const SizedBox(width: 6),
             Text(
               'TNG',
@@ -509,7 +509,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildLogoContainer('assets/images/ewallet/grabpay.png', '🚗'),
+            _buildLogoContainer('images/ewallet/grabpay.png', '🚗'),
             const SizedBox(width: 6),
             Text(
               'Grab',
@@ -521,7 +521,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildLogoContainer('assets/images/ewallet/mae.png', '🏦'),
+            _buildLogoContainer('images/ewallet/mae.png', '🏦'),
             const SizedBox(width: 6),
             Text(
               'MAE',
@@ -533,7 +533,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildLogoContainer('assets/images/ewallet/boost.svg', '⚡'),
+            _buildLogoContainer('images/ewallet/boost.svg', '⚡'),
             const SizedBox(width: 6),
             Text(
               'Boost',
