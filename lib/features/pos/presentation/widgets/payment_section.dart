@@ -467,7 +467,6 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
                   height: 20,
                   fit: BoxFit.contain,
                   placeholderBuilder: (context) {
-                    print('SVG Loading: $imagePath');
                     return Center(
                       child: Text(
                         fallbackEmoji,
@@ -482,7 +481,6 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
                   height: 20,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    print('Image Error: $imagePath - $error');
                     // Fallback to emoji if image not found
                     return Center(
                       child: Text(
