@@ -24,6 +24,7 @@ import 'package:cat_hotel_pos/features/inventory/presentation/screens/inventory_
 import 'package:cat_hotel_pos/features/reports/presentation/screens/reports_screen.dart';
 import 'package:cat_hotel_pos/features/payments/presentation/screens/payments_screen.dart';
 import 'package:cat_hotel_pos/features/services/presentation/screens/services_screen.dart';
+import 'package:cat_hotel_pos/features/landing/presentation/screens/landing_screen.dart';
 import 'package:cat_hotel_pos/features/setup_wizard/presentation/screens/setup_wizard_screen.dart';
 import 'package:cat_hotel_pos/core/widgets/custom_window_demo.dart';
 import 'package:cat_hotel_pos/core/app_config.dart';
@@ -156,6 +157,7 @@ class CatHotelPOSApp extends StatelessWidget {
   static Map<String, WidgetBuilder> _buildMvpRoutes() {
     final routes = <String, WidgetBuilder>{
       '/dashboard': (context) => GlobalAppHelpers.wrapDashboardScreen(const DashboardScreen()),
+      '/landing': (context) => const LandingScreen(),
     };
 
     // Add MVP Required Modules
