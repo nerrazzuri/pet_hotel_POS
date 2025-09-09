@@ -284,11 +284,28 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 	}
 
 	Widget _buildProductsGrid(ThemeData theme, ColorScheme colorScheme) {
-		return GridView.builder(
+		return LayoutBuilder(
+			builder: (context, constraints) {
+				// Responsive columns for tablet/desktop to prevent overflow
+				int crossAxisCount = 2;
+				if (constraints.maxWidth >= 1400) {
+					crossAxisCount = 5;
+				} else if (constraints.maxWidth >= 1100) {
+					crossAxisCount = 4;
+				} else if (constraints.maxWidth >= 800) {
+					crossAxisCount = 3;
+				} else {
+					crossAxisCount = 2;
+				}
+
+				// Adjust aspect ratio slightly for wider screens
+				final aspectRatio = constraints.maxWidth >= 1100 ? 3.5 : 3.0;
+
+				return GridView.builder(
 			padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-			gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-				crossAxisCount: 4,
-				childAspectRatio: 3.0,
+			gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+				crossAxisCount: crossAxisCount,
+				childAspectRatio: aspectRatio,
 				crossAxisSpacing: 12,
 				mainAxisSpacing: 12,
 			),
@@ -296,6 +313,8 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
 			itemBuilder: (context, index) {
 				final product = _filteredProducts[index];
 				return _buildProductCard(product, theme, colorScheme);
+			},
+				);
 			},
 		);
 	}

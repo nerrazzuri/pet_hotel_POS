@@ -300,48 +300,62 @@ class _BookingScreenState extends ConsumerState<BookingScreen>
       padding: const EdgeInsets.all(16),
       child: statisticsAsync.when(
         data: (statistics) {
-          return Row(
-            children: [
-              Expanded(
-                child: _buildEnhancedStatCard(
-                  'Total Bookings',
-                  '${statistics['totalBookings'] ?? 0}',
-                  Icons.book_online,
-                  Colors.blue[700]!,
-                  Colors.blue[50]!,
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 900;
+              final children = <Widget>[
+                Expanded(
+                  child: _buildEnhancedStatCard(
+                    'Total Bookings',
+                    '${statistics['totalBookings'] ?? 0}',
+                    Icons.book_online,
+                    Colors.blue[700]!,
+                    Colors.blue[50]!,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildEnhancedStatCard(
-                  'Active Bookings',
-                  '${statistics['activeBookings'] ?? 0}',
-                  Icons.check_circle,
-                  Colors.green[700]!,
-                  Colors.green[50]!,
+                const SizedBox(width: 16, height: 16),
+                Expanded(
+                  child: _buildEnhancedStatCard(
+                    'Active Bookings',
+                    '${statistics['activeBookings'] ?? 0}',
+                    Icons.check_circle,
+                    Colors.green[700]!,
+                    Colors.green[50]!,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildEnhancedStatCard(
-                  'Pending Bookings',
-                  '${statistics['pendingBookings'] ?? 0}',
-                  Icons.pending,
-                  Colors.orange[700]!,
-                  Colors.orange[50]!,
+                const SizedBox(width: 16, height: 16),
+                Expanded(
+                  child: _buildEnhancedStatCard(
+                    'Pending Bookings',
+                    '${statistics['pendingBookings'] ?? 0}',
+                    Icons.pending,
+                    Colors.orange[700]!,
+                    Colors.orange[50]!,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildEnhancedStatCard(
-                  'Total Revenue',
-                  'MYR ${(statistics['totalRevenue'] ?? 0.0).toStringAsFixed(2)}',
-                  Icons.attach_money,
-                  Colors.green[700]!,
-                  Colors.green[50]!,
+                const SizedBox(width: 16, height: 16),
+                Expanded(
+                  child: _buildEnhancedStatCard(
+                    'Total Revenue',
+                    'MYR ${(statistics['totalRevenue'] ?? 0.0).toStringAsFixed(2)}',
+                    Icons.attach_money,
+                    Colors.green[700]!,
+                    Colors.green[50]!,
+                  ),
                 ),
-              ),
-            ],
+              ];
+
+              if (isNarrow) {
+                return Column(
+                  children: children
+                      .expand((w) => [w, const SizedBox(height: 12)])
+                      .toList()
+                      .sublist(0, children.length * 2 - 1),
+                );
+              }
+
+              return Row(children: children);
+            },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -759,9 +773,11 @@ class _BookingCard extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               
-              // Action Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              // Action Buttons (wrap to avoid overflow)
+              Wrap(
+                alignment: WrapAlignment.spaceEvenly,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   _buildActionButton(
                     'View',
@@ -865,33 +881,37 @@ class _BookingCard extends StatelessWidget {
   }
 
   Widget _buildActionButton(String label, IconData icon, Color color, VoidCallback onPressed) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
+    return Flexible(
+      fit: FlexFit.loose,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: color.withOpacity(0.3),
+              width: 1,
             ),
-          ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

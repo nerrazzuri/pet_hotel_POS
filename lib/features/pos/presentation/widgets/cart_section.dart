@@ -60,8 +60,10 @@ class CartSection extends ConsumerWidget {
           topRight: Radius.circular(20),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        spacing: 8,
+        runSpacing: 8,
         children: [
           // Header with Cart Icon and Title
           Row(
@@ -102,9 +104,11 @@ class CartSection extends ConsumerWidget {
             ],
           ),
           
-          // Action Buttons
+          // Action Buttons (wrap to avoid overflow)
           if (cartItems.isNotEmpty)
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 // Hold Cart Button
                 Container(
@@ -125,8 +129,6 @@ class CartSection extends ConsumerWidget {
                     ),
                   ),
                 ),
-                
-                const SizedBox(width: 8),
                 
                 // Clear Cart Button
                 Container(
@@ -285,21 +287,27 @@ class CartSection extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Text(
-                        '\$${item.price.toStringAsFixed(2)}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: _getCategoryColor(item.category),
-                          fontSize: 12,
+                      Flexible(
+                        child: Text(
+                          '\$${item.price.toStringAsFixed(2)}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: _getCategoryColor(item.category),
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const Spacer(),
-                      Text(
-                        'Total: \$${(item.price * item.quantity).toStringAsFixed(2)}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                          fontSize: 12,
+                      Flexible(
+                        child: Text(
+                          'Total: \$${(item.price * item.quantity).toStringAsFixed(2)}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -310,8 +318,9 @@ class CartSection extends ConsumerWidget {
             
             const SizedBox(width: 16),
             
-            // Quantity Controls
+            // Quantity Controls + Remove (stacked to avoid overflow)
             Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 // Quantity Display
                 Container(
@@ -329,9 +338,7 @@ class CartSection extends ConsumerWidget {
                     ),
                   ),
                 ),
-                
                 const SizedBox(height: 8),
-                
                 // Quantity Controls
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -355,9 +362,7 @@ class CartSection extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    
                     const SizedBox(width: 8),
-                    
                     // Increase Button
                     Container(
                       decoration: BoxDecoration(
@@ -379,20 +384,18 @@ class CartSection extends ConsumerWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                // Remove Button (moved below to save width)
+                IconButton(
+                  onPressed: () => _removeItem(ref, item),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: colorScheme.error,
+                    size: 20,
+                  ),
+                  tooltip: 'Remove Item',
+                ),
               ],
-            ),
-            
-            const SizedBox(width: 12),
-            
-            // Remove Button
-            IconButton(
-              onPressed: () => _removeItem(ref, item),
-              icon: Icon(
-                Icons.delete_outline,
-                color: colorScheme.error,
-                size: 20,
-              ),
-              tooltip: 'Remove Item',
             ),
           ],
         ),

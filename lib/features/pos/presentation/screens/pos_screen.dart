@@ -205,14 +205,14 @@ class _POSScreenState extends ConsumerState<POSScreen> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(
             children: [
               // Left Section - Logo and Title
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(16),
@@ -221,23 +221,23 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                     child: Icon(
                       Icons.point_of_sale,
                       color: Colors.indigo[700],
-                      size: 28,
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Sales Register',
-                        style: theme.textTheme.headlineSmall?.copyWith(
+                        style: theme.textTheme.titleSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         'Cat Hotel POS System',
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: Colors.white.withOpacity(0.9),
                         ),
                       ),
@@ -251,7 +251,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                 child: Center(
                   child: _currentUserName.isNotEmpty
                       ? Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(20),
@@ -276,7 +276,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                 child: Icon(
                                   Icons.person,
                                   color: Colors.white,
-                                  size: 20,
+                                  size: 16,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -287,22 +287,23 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                     'Staff Member',
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: Colors.white.withOpacity(0.8),
-                                      fontSize: 10,
+                                      fontSize: 8,
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                   Text(
                                     _currentUserName,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                    style: theme.textTheme.bodySmall?.copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w600,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 10),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.25),
                                   borderRadius: BorderRadius.circular(12),
@@ -313,7 +314,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 10,
+                                    fontSize: 8,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -330,7 +331,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                 children: [
                   // Current Time
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(20),
@@ -341,12 +342,12 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                         Icon(
                           Icons.access_time,
                           color: Colors.indigo[700],
-                          size: 20,
+                          size: 18,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _currentTime,
-                          style: theme.textTheme.bodyMedium?.copyWith(
+                          style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.indigo[700],
                             fontWeight: FontWeight.w600,
                           ),
@@ -355,7 +356,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                     ),
                   ),
                   
-                  const SizedBox(width: 24),
+                  const SizedBox(width: 12),
                   
                   // Back to Dashboard Button
                   Container(
@@ -368,12 +369,12 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                       icon: Icon(
                         Icons.dashboard,
                         color: Colors.indigo[700],
-                        size: 24,
+                        size: 18,
                       ),
                       onPressed: () => Navigator.of(context).pushReplacementNamed('/dashboard'),
                       tooltip: 'Back to Dashboard',
                       style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(10),
                       ),
                     ),
                   ),
@@ -389,7 +390,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
   Widget _buildQuickActionsBar() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [

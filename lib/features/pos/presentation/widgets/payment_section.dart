@@ -127,6 +127,19 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
 
   Widget _buildPaymentMethodSection(BoxConstraints constraints) {
     final isCompact = constraints.maxWidth < 400;
+    final double spacing = 8;
+    // Determine columns and button width responsively to avoid overflow
+    int columns;
+    if (constraints.maxWidth >= 900) {
+      columns = 4;
+    } else if (constraints.maxWidth >= 700) {
+      columns = 3;
+    } else if (constraints.maxWidth >= 500) {
+      columns = 2;
+    } else {
+      columns = 2;
+    }
+    final double buttonWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,98 +167,29 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
         ),
         const SizedBox(height: 12),
         
-        // Payment Method Buttons - Responsive layout
-        if (isCompact) ...[
-          // Compact layout for narrow screens - 2x2 grid
-          Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPaymentMethodButton(
-                      'cash',
-                      'Cash',
-                      Icons.money,
-                      Colors.green,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildPaymentMethodButton(
-                      'card',
-                      'Card',
-                      Icons.credit_card,
-                      Colors.blue,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPaymentMethodButton(
-                      'e_wallet',
-                      'E-Wallet',
-                      Icons.account_balance_wallet,
-                      Colors.purple,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildPaymentMethodButton(
-                      'bank_transfer',
-                      'Bank Transfer',
-                      Icons.account_balance,
-                      Colors.orange,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ] else ...[
-          // Regular layout for wider screens - single row
-          Row(
-            children: [
-              Expanded(
-                child: _buildPaymentMethodButton(
-                  'cash',
-                  'Cash',
-                  Icons.money,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildPaymentMethodButton(
-                  'card',
-                  'Card',
-                  Icons.credit_card,
-                  Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildPaymentMethodButton(
-                  'e_wallet',
-                  'E-Wallet',
-                  Icons.account_balance_wallet,
-                  Colors.purple,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildPaymentMethodButton(
-                  'bank_transfer',
-                  'Bank Transfer',
-                  Icons.account_balance,
-                  Colors.orange,
-                ),
-              ),
-            ],
-          ),
-        ],
+        // Payment Method Buttons - Responsive layout using Wrap
+        Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            SizedBox(
+              width: buttonWidth,
+              child: _buildPaymentMethodButton('cash', 'Cash', Icons.money, Colors.green),
+            ),
+            SizedBox(
+              width: buttonWidth,
+              child: _buildPaymentMethodButton('card', 'Card', Icons.credit_card, Colors.blue),
+            ),
+            SizedBox(
+              width: buttonWidth,
+              child: _buildPaymentMethodButton('e_wallet', 'E-Wallet', Icons.account_balance_wallet, Colors.purple),
+            ),
+            SizedBox(
+              width: buttonWidth,
+              child: _buildPaymentMethodButton('bank_transfer', 'Bank Transfer', Icons.account_balance, Colors.orange),
+            ),
+          ],
+        ),
         
         const SizedBox(height: 16),
         
@@ -261,38 +205,49 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
     final isSelected = _selectedPaymentMethod == value;
     
     return SizedBox(
-      height: 48,
-      child: ElevatedButton(
-        onPressed: () {
-          setState(() {
-            _selectedPaymentMethod = value;
-            
-            // Auto-fill amount for non-cash payments
-            if (value != 'cash') {
-              final cartTotal = ref.read(cartTotalProvider);
-              _amountPaidController.text = cartTotal.toStringAsFixed(2);
-            }
-          });
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? color : Colors.grey[100],
-          foregroundColor: isSelected ? Colors.white : Colors.grey[700],
-          elevation: isSelected ? 4 : 1,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      height: 40,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool isTiny = constraints.maxWidth < 72; // icon-only fallback
+          return ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _selectedPaymentMethod = value;
+                if (value != 'cash') {
+                  final cartTotal = ref.read(cartTotalProvider);
+                  _amountPaidController.text = cartTotal.toStringAsFixed(2);
+                }
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isSelected ? color : Colors.grey[100],
+              foregroundColor: isSelected ? Colors.white : Colors.grey[700],
+              elevation: isSelected ? 3 : 1,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-          ],
-        ),
+            child: isTiny
+                ? Icon(icon, size: 18)
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 16),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          label,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+          );
+        },
       ),
     );
   }
@@ -374,6 +329,18 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
 
   Widget _buildEWalletOptions(BoxConstraints constraints) {
     final isCompact = constraints.maxWidth < 400;
+    final double spacing = 8;
+    int columns;
+    if (constraints.maxWidth >= 900) {
+      columns = 4;
+    } else if (constraints.maxWidth >= 700) {
+      columns = 3;
+    } else if (constraints.maxWidth >= 500) {
+      columns = 2;
+    } else {
+      columns = 2;
+    }
+    final double buttonWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,63 +354,46 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
           ),
         ),
         const SizedBox(height: 8),
-        if (isCompact) ...[
-          // Compact layout - 2x2 grid
-          Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(child: _buildEWalletButton('tng', 'Touch n Go', Colors.orange)),
-                  const SizedBox(width: 8),
-                  Expanded(child: _buildEWalletButton('grabpay', 'GrabPay', Colors.green)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(child: _buildEWalletButton('mae', 'MAE', Colors.blue)),
-                  const SizedBox(width: 8),
-                  Expanded(child: _buildEWalletButton('boost', 'Boost', Colors.purple)),
-                ],
-              ),
-            ],
-          ),
-        ] else ...[
-          // Regular layout - single row
-          Row(
-            children: [
-              Expanded(child: _buildEWalletButton('tng', 'Touch n Go', Colors.orange)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildEWalletButton('grabpay', 'GrabPay', Colors.green)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildEWalletButton('mae', 'MAE', Colors.blue)),
-              const SizedBox(width: 8),
-              Expanded(child: _buildEWalletButton('boost', 'Boost', Colors.purple)),
-            ],
-          ),
-        ],
+        Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            SizedBox(width: buttonWidth, child: _buildEWalletButton('tng', 'Touch n Go', Colors.orange)),
+            SizedBox(width: buttonWidth, child: _buildEWalletButton('grabpay', 'GrabPay', Colors.green)),
+            SizedBox(width: buttonWidth, child: _buildEWalletButton('mae', 'MAE', Colors.blue)),
+            SizedBox(width: buttonWidth, child: _buildEWalletButton('boost', 'Boost', Colors.purple)),
+          ],
+        ),
       ],
     );
   }
 
   Widget _buildEWalletButton(String type, String label, Color color) {
     return SizedBox(
-      height: 44,
-      child: ElevatedButton(
-        onPressed: () {
-          setState(() {
-            _selectedEWallet = type;
-          });
+      height: 40,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool isTiny = constraints.maxWidth < 80; // logo-only fallback
+          return ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _selectedEWallet = type;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _selectedEWallet == type ? color : Colors.grey[100],
+              foregroundColor: _selectedEWallet == type ? Colors.white : Colors.grey[700],
+              elevation: _selectedEWallet == type ? 3 : 1,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            child: isTiny
+                ? _buildEWalletLogo(type, '')
+                : _buildEWalletLogo(type, label),
+          );
         },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _selectedEWallet == type ? color : Colors.grey[100],
-          foregroundColor: _selectedEWallet == type ? Colors.white : Colors.grey[700],
-          elevation: _selectedEWallet == type ? 3 : 1,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ),
-        child: _buildEWalletLogo(type, label),
       ),
     );
   }
@@ -553,6 +503,18 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
 
   Widget _buildBankTransferOptions(BoxConstraints constraints) {
     final isCompact = constraints.maxWidth < 400;
+    final double spacing = 8;
+    int columns;
+    if (constraints.maxWidth >= 900) {
+      columns = 3;
+    } else if (constraints.maxWidth >= 700) {
+      columns = 3;
+    } else if (constraints.maxWidth >= 500) {
+      columns = 2;
+    } else {
+      columns = 1;
+    }
+    final double itemWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -566,29 +528,15 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
           ),
         ),
         const SizedBox(height: 12),
-        if (isCompact) ...[
-          // Compact layout - stacked vertically
-          Column(
-            children: [
-              _buildBankInfoRow('Receiver Name:', 'Cat Hotel Pet Services'),
-              const SizedBox(height: 8),
-              _buildBankInfoRow('Bank Name:', 'Maybank Berhad'),
-              const SizedBox(height: 8),
-              _buildBankInfoRow('Account Number:', '1234-5678-9012-3456'),
-            ],
-          ),
-        ] else ...[
-          // Regular layout - single row
-          Row(
-            children: [
-              Expanded(child: _buildBankInfoRow('Receiver Name:', 'Cat Hotel Pet Services')),
-              const SizedBox(width: 8),
-              Expanded(child: _buildBankInfoRow('Bank Name:', 'Maybank Berhad')),
-              const SizedBox(width: 8),
-              Expanded(child: _buildBankInfoRow('Account Number:', '1234-5678-9012-3456')),
-            ],
-          ),
-        ],
+        Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            SizedBox(width: itemWidth, child: _buildBankInfoRow('Receiver Name:', 'Cat Hotel Pet Services')),
+            SizedBox(width: itemWidth, child: _buildBankInfoRow('Bank Name:', 'Maybank Berhad')),
+            SizedBox(width: itemWidth, child: _buildBankInfoRow('Account Number:', '1234-5678-9012-3456')),
+          ],
+        ),
       ],
     );
   }

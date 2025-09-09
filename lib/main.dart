@@ -33,6 +33,7 @@ import 'package:cat_hotel_pos/core/app_config.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:cat_hotel_pos/core/widgets/custom_window_frame.dart';
 import 'package:cat_hotel_pos/core/widgets/global_app_wrapper.dart';
+import 'package:flutter/rendering.dart' as rendering;
 
 
 void main() async {
@@ -124,6 +125,13 @@ void main() async {
   print('AppConfig initialized');
   
   print('All services initialized, running app...');
+  // Enable visual debugging for layout overflows in debug mode
+  assert(() {
+    rendering.debugPaintSizeEnabled = true;
+    rendering.debugPaintBaselinesEnabled = false;
+    rendering.debugPaintPointersEnabled = false;
+    return true;
+  }());
   runApp(const ProviderScope(child: CatHotelPOSApp()));
 }
 
@@ -144,6 +152,15 @@ class CatHotelPOSApp extends StatelessWidget {
         fontFamily: 'Roboto',
       ),
       themeMode: ThemeMode.system,
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        // Clamp text scaling to avoid layout overflows on tablets/large devices
+        final clampedScale = mediaQuery.textScaleFactor.clamp(0.9, 1.2);
+        return MediaQuery(
+          data: mediaQuery.copyWith(textScaleFactor: clampedScale.toDouble()),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: GlobalAppHelpers.wrapLoginScreen(const LoginScreen()),
       routes: _buildMvpRoutes(),
     );
