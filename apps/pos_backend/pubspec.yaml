@@ -1,0 +1,21 @@
+name: pos_backend
+description: A sample command-line application.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.9.0
+
+# Add regular dependencies here.
+dependencies:
+  shelf: ^1.4.2
+  shelf_router: ^1.1.4
+  shelf_cors_headers: ^0.1.5
+  dart_jsonwebtoken: ^2.14.0
+  uuid: ^4.5.1
+  crypto: ^3.0.6
+  path: ^1.9.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
